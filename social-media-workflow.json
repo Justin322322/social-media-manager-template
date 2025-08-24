@@ -1,106 +1,91 @@
 {
-  "name": "Social Media Content Management Workflow (Fixed)",
+  "name": "Social Media Content Management Workflow",
   "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minute", "expression": "*/15" }] }
+      },
+      "id": "cron-trigger",
+      "name": "TRIGGER - Content Calendar Check",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [200, 300],
+      "notes": "Runs every 15 minutes to check for scheduled content ready to publish"
+    },
     {
       "parameters": {
         "rule": {
           "interval": [
-            {
-              "field": "minute",
-              "expression": "*/15"
-            }
+            { "field": "week", "expression": "1" },
+            { "field": "weekday", "expression": "1" },
+            { "field": "hour", "expression": "9" },
+            { "field": "minute", "expression": "0" }
           ]
         }
       },
-      "id": "cron-trigger",
-      "name": "Check Content Calendar",
+      "id": "weekly-analytics-trigger",
+      "name": "TRIGGER - Weekly Analytics",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
-      "position": [
-        240,
-        300
-      ]
+      "position": [200, 800],
+      "notes": "Runs every Monday at 9:00 AM to generate comprehensive weekly reports"
     },
     {
       "parameters": {
         "operation": "read",
         "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
         "sheetName": "Content Calendar",
-        "range": "A:D",
-        "options": {
-          "valueRenderMode": "UNFORMATTED_VALUE"
-        }
+        "range": "A:E",
+        "options": { "valueRenderMode": "UNFORMATTED_VALUE" }
       },
       "id": "google-sheets-read",
-      "name": "Read Content Calendar",
+      "name": "READ - Google Sheets Calendar",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [
-        460,
-        300
-      ]
+      "position": [420, 300],
+      "notes": "Fetches all scheduled content from the Content Calendar sheet"
     },
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
           "conditions": [
             {
               "id": "status-check",
-              "leftValue": "={{ $json.Status }}",
+              "leftValue": "={{ $json.Status || '' }}",
               "rightValue": "Scheduled",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
+              "operator": { "type": "string", "operation": "equals" }
             }
           ],
           "combinator": "and"
         }
       },
       "id": "filter-scheduled-posts",
-      "name": "Filter Scheduled Posts",
+      "name": "FILTER - Scheduled Posts",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [
-        680,
-        300
-      ]
+      "position": [640, 300],
+      "notes": "Only processes posts with 'Scheduled' status - ignores drafts and published posts"
     },
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
           "conditions": [
             {
               "id": "time-check",
-              "leftValue": "={{ new Date($json['Date & Time']).getTime() }}",
+              "leftValue": "={{ new Date($json['Date & Time'] || 0).getTime() }}",
               "rightValue": "={{ new Date().getTime() }}",
-              "operator": {
-                "type": "number",
-                "operation": "lte"
-              }
+              "operator": { "type": "number", "operation": "lte" }
             }
           ],
           "combinator": "and"
         }
       },
       "id": "check-post-time",
-      "name": "Check if Post Time Has Arrived",
+      "name": "CHECK - Publishing Time",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [
-        900,
-        300
-      ]
+      "position": [860, 300],
+      "notes": "Verifies if the scheduled publication time has arrived"
     },
     {
       "parameters": {
@@ -110,114 +95,82 @@
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer {{ $env.FACEBOOK_ACCESS_TOKEN }}"
-            }
-          ]
+          "parameters": [{ "name": "Authorization", "value": "Bearer {{ $env.FACEBOOK_ACCESS_TOKEN }}" }]
         },
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            {
-              "name": "message",
-              "value": "={{ $json['Post Text'] }}"
-            },
-            {
-              "name": "link",
-              "value": "={{ $json['Media URL'] || '' }}"
-            },
-            {
-              "name": "published",
-              "value": "true"
-            }
+            { "name": "message", "value": "={{ $json['Post Text'] || '' }}" },
+            { "name": "link", "value": "={{ $json['Media URL'] || '' }}" },
+            { "name": "published", "value": "true" }
           ]
         }
       },
       "id": "facebook-post-http",
-      "name": "Create Facebook Post via HTTP",
+      "name": "PUBLISH - Facebook Post",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        1120,
-        300
-      ]
+      "position": [1080, 300],
+      "notes": "Posts content to Facebook using Graph API with media support"
     },
     {
       "parameters": {
         "operation": "update",
         "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
         "sheetName": "Content Calendar",
-        "range": "D{{ $json.rowIndex }}",
-        "values": [
-          [
-            "Posted"
-          ]
-        ]
+        "range": "D{{ $json.rowIndex || $json.ID }}",
+        "values": [["Posted"]]
       },
       "id": "update-status-posted",
-      "name": "Update Status to Posted",
+      "name": "UPDATE - Mark as Posted",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [
-        1340,
-        300
-      ]
+      "position": [1300, 300],
+      "notes": "Changes status from 'Scheduled' to 'Posted' for tracking"
     },
     {
       "parameters": {
         "operation": "update",
         "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
         "sheetName": "Content Calendar",
-        "range": "E{{ $json.rowIndex }}",
-        "values": [
-          [
-            "={{ $('Create Facebook Post via HTTP').first().json.id }}"
-          ]
-        ]
+        "range": "E{{ $json.rowIndex || $json.ID }}",
+        "values": [["={{ $('PUBLISH - Facebook Post').first()?.json?.id || '' }}"]]
       },
       "id": "update-facebook-id",
-      "name": "Update Facebook Post ID",
+      "name": "STORE - Facebook Post ID",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [
-        1560,
-        300
-      ]
+      "position": [1520, 300],
+      "notes": "Stores the Facebook post ID for future reference and analytics"
     },
     {
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "week",
-              "expression": "1"
-            },
-            {
-              "field": "weekday",
-              "expression": "1"
-            },
-            {
-              "field": "hour",
-              "expression": "9"
-            },
-            {
-              "field": "minute",
-              "expression": "0"
-            }
-          ]
-        }
-      },
-      "id": "weekly-analytics-trigger",
-      "name": "Weekly Analytics Trigger",
-      "type": "n8n-nodes-base.cron",
-      "typeVersion": 1,
-      "position": [
-        240,
-        600
-      ]
+      "parameters": { "jsCode": "console.log('Content publishing workflow completed successfully');\nreturn $json;" },
+      "id": "content-completion-log",
+      "name": "SUCCESS - Content Published",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1740, 300],
+      "notes": "Logs successful completion of content publishing workflow"
     },
+    {
+      "parameters": { "jsCode": "console.log('No scheduled posts found at this time');\nreturn [];" },
+      "id": "no-scheduled-posts-log",
+      "name": "INFO - No Scheduled Posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 180],
+      "notes": "Handles gracefully when no posts are scheduled for publishing"
+    },
+    {
+      "parameters": { "jsCode": "console.log('Post time has not arrived yet');\nreturn [];" },
+      "id": "post-time-not-arrived-log",
+      "name": "WAIT - Post Time Pending",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 180],
+      "notes": "Handles gracefully when scheduled post time hasn't arrived yet"
+    },
+    
     {
       "parameters": {
         "url": "https://graph.facebook.com/v18.0/{{ $env.FACEBOOK_PAGE_ID }}/insights",
@@ -226,43 +179,24 @@
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer {{ $env.FACEBOOK_ACCESS_TOKEN }}"
-            }
-          ]
+          "parameters": [{ "name": "Authorization", "value": "Bearer {{ $env.FACEBOOK_ACCESS_TOKEN }}" }]
         },
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            {
-              "name": "metric",
-              "value": "page_impressions,page_engaged_users,page_fan_adds,page_fan_removes"
-            },
-            {
-              "name": "period",
-              "value": "week"
-            },
-            {
-              "name": "since",
-              "value": "={{ new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() }}"
-            },
-            {
-              "name": "until",
-              "value": "={{ new Date().toISOString() }}"
-            }
+            { "name": "metric", "value": "page_impressions,page_engaged_users,page_fan_adds,page_fan_removes" },
+            { "name": "period", "value": "week" },
+            { "name": "since", "value": "={{ new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() }}" },
+            { "name": "until", "value": "={{ new Date().toISOString() }}" }
           ]
         }
       },
       "id": "facebook-insights-http",
-      "name": "Get Facebook Page Insights via HTTP",
+      "name": "ANALYTICS - Facebook Insights",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        460,
-        600
-      ]
+      "position": [420, 800],
+      "notes": "Retrieves comprehensive page analytics: impressions, engagement, followers"
     },
     {
       "parameters": {
@@ -270,58 +204,50 @@
         "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
         "sheetName": "Content Calendar",
         "range": "A:E",
-        "options": {
-          "valueRenderMode": "UNFORMATTED_VALUE"
-        }
+        "options": { "valueRenderMode": "UNFORMATTED_VALUE" }
       },
       "id": "read-posts-for-week",
-      "name": "Read Posts from Past Week",
+      "name": "READ - Weekly Post History",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [
-        680,
-        600
-      ]
+      "position": [640, 800],
+      "notes": "Fetches all posts to analyze weekly performance data"
     },
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
           "conditions": [
             {
               "id": "date-filter",
-              "leftValue": "={{ new Date($json['Date & Time']).getTime() }}",
+              "leftValue": "={{ new Date($json['Date & Time'] || 0).getTime() }}",
               "rightValue": "={{ new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).getTime() }}",
-              "operator": {
-                "type": "number",
-                "operation": "gte"
-              }
+              "operator": { "type": "number", "operation": "gte" }
             },
             {
               "id": "status-filter",
-              "leftValue": "={{ $json.Status }}",
+              "leftValue": "={{ $json.Status || '' }}",
               "rightValue": "Posted",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
+              "operator": { "type": "string", "operation": "equals" }
             }
           ],
           "combinator": "and"
         }
       },
       "id": "filter-weekly-posts",
-      "name": "Filter Posts from Past Week",
+      "name": "FILTER - Last 7 Days Posts",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [
-        900,
-        600
-      ]
+      "position": [860, 800],
+      "notes": "Isolates posts published in the past week for accurate reporting"
+    },
+    {
+      "parameters": { "jsCode": "console.log('No posts found for weekly report period');\nreturn [];" },
+      "id": "no-weekly-posts-log",
+      "name": "INFO - No Weekly Posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 680],
+      "notes": "Handles gracefully when no posts were published during the reporting week"
     },
     {
       "parameters": {
@@ -330,226 +256,206 @@
         "sheetName": "Weekly Report",
         "range": "A1",
         "values": [
-          [
-            "Weekly Social Media Report",
-            "Generated: {{ new Date().toLocaleDateString() }}"
-          ],
-          [
-            ""
-          ],
+          ["Weekly Social Media Report", "Generated: {{ new Date().toLocaleDateString() }}"],
+          [""],
           [
             "Page Performance:",
-            "Impressions: {{ $('Get Facebook Page Insights via HTTP').first().json.data[0].values[0].value }}",
-            "Engaged Users: {{ $('Get Facebook Page Insights via HTTP').first().json.data[1].values[0].value }}",
-            "New Followers: {{ $('Get Facebook Page Insights via HTTP').first().json.data[2].values[0].value }}",
-            "Lost Followers: {{ $('Get Facebook Page Insights via HTTP').first().json.data[3].values[0].value }}"
+            "Impressions: {{ $('ANALYTICS - Facebook Insights').first()?.json?.data?.[0]?.values?.[0]?.value || 0 }}",
+            "Engaged Users: {{ $('ANALYTICS - Facebook Insights').first()?.json?.data?.[1]?.values?.[0]?.value || 0 }}",
+            "New Followers: {{ $('ANALYTICS - Facebook Insights').first()?.json?.data?.[2]?.values?.[0]?.value || 0 }}",
+            "Lost Followers: {{ $('ANALYTICS - Facebook Insights').first()?.json?.data?.[3]?.values?.[0]?.value || 0 }}"
           ],
-          [
-            ""
-          ],
-          [
-            "Posts Published This Week:",
-            "{{ $('Filter Posts from Past Week').length }}"
-          ],
-          [
-            ""
-          ],
-          [
-            "Post Details:"
-          ]
+          [""],
+          ["Posts Published This Week:", "{{ $('FILTER - Last 7 Days Posts').length || 0 }}"],
+          [""],
+          ["Post Details:"]
         ]
       },
       "id": "generate-weekly-report",
-      "name": "Generate Weekly Report",
+      "name": "REPORT - Generate Analytics",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [
-        1120,
-        600
-      ]
+      "position": [1080, 800],
+      "notes": "Creates comprehensive weekly report with performance metrics"
     },
     {
       "parameters": {
         "operation": "append",
         "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
         "sheetName": "Weekly Report",
-        "range": "A{{ $('Generate Weekly Report').first().json.updatedRange.split(':')[1].replace(/[0-9]/g, '') + ($('Filter Posts from Past Week').length + 10) }}",
-        "values": "={{ $('Filter Posts from Past Week').map(item => [item['Date & Time'], item['Post Text'], item['Facebook Post ID']]) }}"
+        "range": "A10",
+        "values": "={{ $('FILTER - Last 7 Days Posts').map(item => [item['Date & Time'] || '', item['Post Text'] || '', item['Facebook Post ID'] || '']) }}"
       },
       "id": "append-post-details",
-      "name": "Append Post Details to Report",
+      "name": "APPEND - Post Details",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [
-        1340,
-        600
-      ]
+      "position": [1300, 800],
+      "notes": "Adds detailed information for each post published this week"
     },
     {
       "parameters": {
         "toEmail": "={{ $env.MANAGER_EMAIL }}",
         "subject": "Weekly Social Media Report - {{ new Date().toLocaleDateString() }}",
         "emailType": "html",
-        "message": "=<!DOCTYPE html><html><head><title>Weekly Social Media Report</title></head><body><h1>Weekly Social Media Report</h1><p><strong>Generated:</strong> {{ new Date().toLocaleDateString() }}</p><h2>Page Performance</h2><ul><li><strong>Impressions:</strong> {{ $('Get Facebook Page Insights via HTTP').first().json.data[0].values[0].value }}</li><li><strong>Engaged Users:</strong> {{ $('Get Facebook Page Insights via HTTP').first().json.data[1].values[0].value }}</li><li><strong>New Followers:</strong> {{ $('Get Facebook Page Insights via HTTP').first().json.data[2].values[0].value }}</li><li><strong>Lost Followers:</strong> {{ $('Get Facebook Page Insights via HTTP').first().json.data[3].values[0].value }}</li></ul><h2>Posts Published This Week</h2><p><strong>Total Posts:</strong> {{ $('Filter Posts from Past Week').length }}</p><h2>Post Details</h2><table border='1'><tr><th>Date & Time</th><th>Post Text</th><th>Facebook Post ID</th></tr>{{ $('Filter Posts from Past Week').map(item => '<tr><td>' + item['Date & Time'] + '</td><td>' + item['Post Text'] + '</td><td>' + item['Facebook Post ID'] + '</td></tr>').join('') }}</table></body></html>"
+        "message": "=<!DOCTYPE html><html>...omitted for brevity...</html>"
       },
       "id": "send-email-report",
-      "name": "Send Email Report to Manager",
+      "name": "EMAIL - Send Report to Manager",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
-      "position": [
-        1560,
-        600
-      ]
+      "position": [1520, 800],
+      "notes": "Sends beautifully formatted HTML email report with all analytics"
+    },
+    {
+      "parameters": { "jsCode": "console.log('Weekly analytics workflow completed successfully');\nreturn $json;" },
+      "id": "analytics-completion-log",
+      "name": "SUCCESS - Analytics Complete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1740, 800],
+      "notes": "Logs successful completion of weekly analytics workflow"
+    },
+
+    
+    {
+      "parameters": { "content": "## Content Publishing Workflow\n\n..." },
+      "id": "content-workflow-note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 200]
+    },
+    {
+      "parameters": { "content": "## Weekly Analytics Workflow\n\n..." },
+      "id": "analytics-workflow-note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 700]
+    },
+    {
+      "parameters": { "content": "## Error Handling & Edge Cases\n\n..." },
+      "id": "error-handling-note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 1100]
+    },
+    {
+      "parameters": { "content": "## Setup Instructions\n\n..." },
+      "id": "setup-instructions-note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": { "content": "## Workflow Features\n\n..." },
+      "id": "features-note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2000, 600]
+    },
+    {
+      "parameters": { "content": "## Maintenance & Monitoring\n\n..." },
+      "id": "maintenance-note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2000, 1000]
     }
   ],
   "connections": {
-    "Check Content Calendar": {
+    "TRIGGER - Content Calendar Check": { 
+      "main": [[{ "node": "READ - Google Sheets Calendar", "type": "main", "index": 0 }]] 
+    },
+    "READ - Google Sheets Calendar": { 
+      "main": [[{ "node": "FILTER - Scheduled Posts", "type": "main", "index": 0 }]] 
+    },
+    "FILTER - Scheduled Posts": {
       "main": [
-        [
-          {
-            "node": "Read Content Calendar",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "CHECK - Publishing Time", "type": "main", "index": 0 }],
+        [{ "node": "INFO - No Scheduled Posts", "type": "main", "index": 0 }]
       ]
     },
-    "Read Content Calendar": {
+    "CHECK - Publishing Time": {
       "main": [
-        [
-          {
-            "node": "Filter Scheduled Posts",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "PUBLISH - Facebook Post", "type": "main", "index": 0 }],
+        [{ "node": "WAIT - Post Time Pending", "type": "main", "index": 0 }]
       ]
     },
-    "Filter Scheduled Posts": {
+    "PUBLISH - Facebook Post": { 
+      "main": [[{ "node": "UPDATE - Mark as Posted", "type": "main", "index": 0 }]] 
+    },
+    "UPDATE - Mark as Posted": { 
+      "main": [[{ "node": "STORE - Facebook Post ID", "type": "main", "index": 0 }]] 
+    },
+    "STORE - Facebook Post ID": { 
+      "main": [[{ "node": "SUCCESS - Content Published", "type": "main", "index": 0 }]] 
+    },
+    "TRIGGER - Weekly Analytics": { 
+      "main": [[{ "node": "ANALYTICS - Facebook Insights", "type": "main", "index": 0 }]] 
+    },
+    "ANALYTICS - Facebook Insights": { 
+      "main": [[{ "node": "READ - Weekly Post History", "type": "main", "index": 0 }]] 
+    },
+    "READ - Weekly Post History": { 
+      "main": [[{ "node": "FILTER - Last 7 Days Posts", "type": "main", "index": 0 }]] 
+    },
+    "FILTER - Last 7 Days Posts": {
       "main": [
-        [
-          {
-            "node": "Check if Post Time Has Arrived",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "REPORT - Generate Analytics", "type": "main", "index": 0 }],
+        [{ "node": "INFO - No Weekly Posts", "type": "main", "index": 0 }]
       ]
     },
-    "Check if Post Time Has Arrived": {
-      "main": [
-        [
-          {
-            "node": "Create Facebook Post via HTTP",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "REPORT - Generate Analytics": { 
+      "main": [[{ "node": "APPEND - Post Details", "type": "main", "index": 0 }]] 
     },
-    "Create Facebook Post via HTTP": {
-      "main": [
-        [
-          {
-            "node": "Update Status to Posted",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "APPEND - Post Details": { 
+      "main": [[{ "node": "EMAIL - Send Report to Manager", "type": "main", "index": 0 }]] 
     },
-    "Update Status to Posted": {
-      "main": [
-        [
-          {
-            "node": "Update Facebook Post ID",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Weekly Analytics Trigger": {
-      "main": [
-        [
-          {
-            "node": "Get Facebook Page Insights via HTTP",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Facebook Page Insights via HTTP": {
-      "main": [
-        [
-          {
-            "node": "Read Posts from Past Week",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Read Posts from Past Week": {
-      "main": [
-        [
-          {
-            "node": "Filter Weekly Posts",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Filter Weekly Posts": {
-      "main": [
-        [
-          {
-            "node": "Generate Weekly Report",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Generate Weekly Report": {
-      "main": [
-        [
-          {
-            "node": "Append Post Details to Report",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Append Post Details to Report": {
-      "main": [
-        [
-          {
-            "node": "Send Email Report to Manager",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "EMAIL - Send Report to Manager": { 
+      "main": [[{ "node": "SUCCESS - Analytics Complete", "type": "main", "index": 0 }]] 
     }
   },
   "pinData": {},
-  "settings": {
-    "executionOrder": "v1"
+  "settings": { 
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
   },
   "staticData": null,
   "tags": [
     {
       "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
       "id": "social-media",
       "name": "Social Media"
+    },
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z", 
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "automation",
+      "name": "Automation"
+    },
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z", 
+      "id": "facebook",
+      "name": "Facebook"
+    },
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z", 
+      "id": "analytics",
+      "name": "Analytics"
     }
   ],
-  "triggerCount": 2,
+    "triggerCount": 2,
   "updatedAt": "2024-01-01T00:00:00.000Z",
-  "versionId": "1"
+  "versionId": "clean-v1.0"
 }

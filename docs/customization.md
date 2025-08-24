@@ -6,21 +6,23 @@ Learn how to modify and extend the Social Media Content Management Workflow.
 
 ### Change Posting Frequency
 
-Modify the cron expression in "Check Content Calendar" node:
+Modify the cron expression in "TRIGGER - Content Calendar Check" node:
 
 - **Current**: Every 15 minutes (`*/15`)
 - **Every hour**: `0 * * * *`
 - **Every 2 hours**: `0 */2 * * *`
 - **Business hours only**: `0 9-17 * * 1-5`
+- **Custom intervals**: `*/30` for every 30 minutes
 
 ### Change Weekly Report Timing
 
-Modify the cron expression in "Weekly Analytics Trigger" node:
+Modify the cron expression in "TRIGGER - Weekly Analytics" node:
 
-- **Current**: Every Monday at 9 AM
+- **Current**: Every Monday at 9:00 AM
 - **Every Friday at 5 PM**: `0 17 * * 5`
 - **Every day at 6 AM**: `0 6 * * *`
 - **First of month**: `0 9 1 * *`
+- **Bi-weekly**: `0 9 * * 1/2` (every other Monday)
 
 ## Add More Social Media Platforms
 
@@ -67,7 +69,7 @@ Modify the cron expression in "Weekly Analytics Trigger" node:
 
 ### Add More Facebook Metrics
 
-Edit the "Get Facebook Page Insights via HTTP" node:
+Edit the "ANALYTICS - Facebook Insights" node parameters:
 
 ```json
 {
@@ -99,268 +101,256 @@ Create separate HTTP Request nodes for different periods:
 - **Weekly**: `period=week` (current)
 - **Monthly**: `period=month`
 
-## Email Report Customization
+## Workflow Modifications
 
-### Modify HTML Template
+### Add Content Approval Workflow
 
-Edit the "Send Email Report to Manager" node message field:
+1. **Add approval status column** to Google Sheets
+2. **Create approval filter node**:
+   ```javascript
+   // Filter for approved posts only
+   return $json.filter(item => item.Status === 'Approved');
+   ```
 
-```html
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Weekly Social Media Report</title>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    .header { background: #007bff; color: white; padding: 20px; }
-    .metric { background: #f8f9fa; padding: 15px; margin: 10px 0; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>Weekly Social Media Report</h1>
-    <p>Generated: {{ new Date().toLocaleDateString() }}</p>
-  </div>
-  
-  <div class="metric">
-    <h2>Page Performance</h2>
-    <ul>
-      <li><strong>Impressions:</strong> {{ $('Get Facebook Page Insights via HTTP').first().json.data[0].values[0].value }}</li>
-      <li><strong>Engaged Users:</strong> {{ $('Get Facebook Page Insights via HTTP').first().json.data[1].values[0].value }}</li>
-      <li><strong>Engagement Rate:</strong> {{ $('Calculate Engagement Rate').first().json.engagementRate }}%</li>
-    </ul>
-  </div>
-  
-  <!-- Add more custom sections here -->
-</body>
-</html>
-```
+3. **Add approval notification**:
+   ```javascript
+   // Send approval request email
+   const approvalEmail = {
+     to: item['Approver Email'],
+     subject: 'Content Approval Required',
+     body: `Please review: ${item['Post Text']}`
+   };
+   ```
 
-### Add Attachments
+### Enhanced Error Handling
 
-Modify the Email Send node to include attachments:
+1. **Add retry logic** for failed posts:
+   ```javascript
+   // Retry failed posts with exponential backoff
+   if (failedAttempts < maxRetries) {
+     const delay = Math.pow(2, failedAttempts) * 1000;
+     setTimeout(() => retryPost(item), delay);
+   }
+   ```
 
-1. **Add "Code" node** to generate CSV report
-2. **Use "Move Binary Data" node** to create file
-3. **Configure Email Send node** with attachments
+2. **Add error notification**:
+   ```javascript
+   // Send error alerts
+   const errorAlert = {
+     to: 'admin@company.com',
+     subject: 'Workflow Error Alert',
+     body: `Error in ${workflowName}: ${errorMessage}`
+   };
+   ```
 
-## Content Validation
+### Content Validation
 
-### Add Content Filters
+1. **Add content length check**:
+   ```javascript
+   // Validate post length
+   if (postText.length > 2200) {
+     return { error: 'Post too long for Facebook' };
+   }
+   ```
 
-Insert a "Code" node after "Filter Scheduled Posts":
+2. **Add URL validation**:
+   ```javascript
+   // Validate media URLs
+   const urlRegex = /^https?:\/\/.+/;
+   if (mediaUrl && !urlRegex.test(mediaUrl)) {
+     return { error: 'Invalid media URL' };
+   }
+   ```
 
-```javascript
-// Validate post content
-const postText = $json['Post Text'];
-const mediaUrl = $json['Media URL'];
+## Google Sheets Enhancements
 
-// Check content length
-if (postText.length > 2000) {
-  throw new Error('Post text too long (max 2000 characters)');
-}
+### Add Content Categories
 
-// Validate media URL
-if (mediaUrl && !mediaUrl.startsWith('http')) {
-  throw new Error('Invalid media URL');
-}
+1. **Add Category column** (Column F):
+   - Product
+   - Culture
+   - News
+   - Promotional
+   - User Generated
 
-// Check for required hashtags
-if (!postText.includes('#')) {
-  throw new Error('Post must include at least one hashtag');
-}
+2. **Add category-based filtering**:
+   ```javascript
+   // Filter by category
+   const categoryFilter = $json.filter(item => 
+     item.Category === selectedCategory
+   );
+   ```
 
-return $json;
-```
+### Add Performance Tracking
 
-### Approval Workflow
+1. **Add engagement columns**:
+   - Likes
+   - Comments
+   - Shares
+   - Reach
 
-Add approval nodes before posting:
+2. **Update metrics after posting**:
+   ```javascript
+   // Update engagement metrics
+   const updateData = [
+     [likes, comments, shares, reach]
+   ];
+   ```
 
-1. **"If" node** to check approval status
-2. **"Email Send" node** to request approval
-3. **"Wait" node** to pause for approval
-4. **"Google Sheets" node** to update approval status
+### Add Content Calendar Views
 
-## Error Handling
+1. **Create filtered views**:
+   - Upcoming posts
+   - Published posts
+   - Draft posts
+   - Category-specific views
 
-### Custom Error Messages
+2. **Add conditional formatting**:
+   - Color-code by category
+   - Highlight overdue posts
+   - Mark high-priority content
 
-Add "Error Trigger" nodes to handle failures:
+## Email Template Customization
 
-```javascript
-// Custom error handling
-const error = $json.error;
-const postData = $json.postData;
+### Modify Weekly Report Email
 
-// Send error notification
-return {
-  error: error,
-  postData: postData,
-  timestamp: new Date().toISOString(),
-  retryCount: $json.retryCount || 0
-};
-```
+1. **Customize HTML template** in "EMAIL - Send Report to Manager":
+   ```html
+   <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+     <h1>Custom Weekly Report</h1>
+   </div>
+   ```
 
-### Retry Logic
+2. **Add company branding**:
+   ```html
+   <img src="{{ $env.COMPANY_LOGO_URL }}" alt="Company Logo">
+   <div style="color: {{ $env.BRAND_COLOR }};">
+   ```
 
-Implement exponential backoff:
+### Add Multiple Recipients
 
-```javascript
-// Calculate retry delay
-const retryCount = $json.retryCount || 0;
-const baseDelay = 1000; // 1 second
-const maxDelay = 300000; // 5 minutes
+1. **Modify email node** to send to multiple people:
+   ```javascript
+   const recipients = [
+     'manager@company.com',
+     'marketing@company.com',
+     'analytics@company.com'
+   ].join(',');
+   ```
 
-const delay = Math.min(baseDelay * Math.pow(2, retryCount), maxDelay);
-
-return {
-  ...$json,
-  retryDelay: delay,
-  shouldRetry: retryCount < 3
-};
-```
-
-## Performance Optimization
-
-### Batch Processing
-
-Modify Google Sheets operations to batch updates:
-
-```javascript
-// Batch multiple updates
-const updates = $('Filter Scheduled Posts').map(post => ({
-  range: `D${post.rowIndex}`,
-  values: [['Posted']]
-}));
-
-return {
-  batchUpdates: updates
-};
-```
-
-### Caching
-
-Add caching for frequently accessed data:
-
-```javascript
-// Cache Facebook insights for 1 hour
-const cacheKey = 'facebook_insights';
-const cached = $cache.get(cacheKey);
-
-if (cached && Date.now() - cached.timestamp < 3600000) {
-  return cached.data;
-}
-
-// Fetch fresh data and cache
-const freshData = $json;
-$cache.set(cacheKey, {
-  data: freshData,
-  timestamp: Date.now()
-});
-
-return freshData;
-```
-
-## Monitoring and Alerts
-
-### Custom Notifications
-
-Add notification nodes for different events:
-
-1. **Post Success**: Slack/Teams notification
-2. **Post Failure**: Email alert to admin
-3. **High Engagement**: Celebrate successful posts
-4. **API Rate Limits**: Warning before hitting limits
-
-### Dashboard Integration
-
-Send metrics to external dashboards:
-
-```javascript
-// Send to Google Analytics
-const analyticsData = {
-  event: 'social_media_post',
-  properties: {
-    platform: 'facebook',
-    post_id: $json.id,
-    engagement: $json.engagement
-  }
-};
-
-// Send to external API
-$http.post('https://your-dashboard.com/api/metrics', analyticsData);
-
-return $json;
-```
+2. **Add role-based reports**:
+   ```javascript
+   // Send different reports based on role
+   if (role === 'manager') {
+     return fullReport;
+   } else if (role === 'analyst') {
+     return detailedMetrics;
+   }
+   ```
 
 ## Advanced Features
 
-### A/B Testing
+### Add Content Scheduling Rules
 
-Implement content testing:
+1. **Business hours only**:
+   ```javascript
+   const hour = new Date().getHours();
+   const isBusinessHour = hour >= 9 && hour <= 17;
+   const isWeekday = new Date().getDay() >= 1 && new Date().getDay() <= 5;
+   
+   if (!isBusinessHour || !isWeekday) {
+     return { skip: 'Outside business hours' };
+   }
+   ```
 
-1. **"Code" node** to select test variant
-2. **"If" node** to route to different content
-3. **"Wait" node** to delay variant B
-4. **"Code" node** to analyze results
+2. **Optimal posting times**:
+   ```javascript
+   const optimalHours = [9, 12, 15, 18];
+   const currentHour = new Date().getHours();
+   
+   if (!optimalHours.includes(currentHour)) {
+     return { skip: 'Not optimal posting time' };
+   }
+   ```
 
-### Content Scheduling
+### Add A/B Testing
 
-Add intelligent scheduling:
+1. **Create test groups**:
+   ```javascript
+   const testGroups = ['A', 'B'];
+   const selectedGroup = testGroups[Math.floor(Math.random() * 2)];
+   
+   // Modify content based on group
+   if (selectedGroup === 'A') {
+     postText += ' #TestA';
+   } else {
+     postText += ' #TestB';
+   }
+   ```
 
-```javascript
-// Avoid posting during low-engagement hours
-const hour = new Date().getHours();
-const lowEngagementHours = [0, 1, 2, 3, 4, 5, 6, 23];
+2. **Track performance** by group:
+   ```javascript
+   // Store test group with post
+   const testData = [postId, selectedGroup, performance];
+   ```
 
-if (lowEngagementHours.includes(hour)) {
-  // Reschedule for better time
-  const betterTime = new Date();
-  betterTime.setHours(9); // 9 AM
-  betterTime.setMinutes(0);
-  
-  return {
-    ...$json,
-    rescheduled: true,
-    newTime: betterTime.toISOString()
-  };
-}
+### Add Content Recycling
 
-return $json;
-```
+1. **Identify evergreen content**:
+   ```javascript
+   const evergreenKeywords = ['tips', 'how-to', 'guide', 'best practices'];
+   const isEvergreen = evergreenKeywords.some(keyword => 
+     postText.toLowerCase().includes(keyword)
+   );
+   ```
 
-### Multi-Language Support
+2. **Schedule reposts**:
+   ```javascript
+   if (isEvergreen && daysSinceLastPost > 30) {
+     // Schedule repost
+     return { action: 'repost', content: postText };
+   }
+   ```
 
-Handle multiple languages:
+## Performance Optimization
 
-```javascript
-// Detect language and translate if needed
-const postText = $json['Post Text'];
-const targetLanguage = $env.TARGET_LANGUAGE || 'en';
+### Reduce API Calls
 
-if (targetLanguage !== 'en') {
-  // Call translation API
-  const translated = await $http.post('https://translation-api.com/translate', {
-    text: postText,
-    target: targetLanguage
-  });
-  
-  return {
-    ...$json,
-    'Post Text': translated.text,
-    originalText: postText
-  };
-}
+1. **Batch operations**:
+   ```javascript
+   // Process multiple posts in one API call
+   const batchPosts = posts.map(post => ({
+     message: post.text,
+     published: true
+   }));
+   ```
 
-return $json;
-```
+2. **Cache frequently used data**:
+   ```javascript
+   // Cache Facebook page info
+   const pageInfo = await getCachedPageInfo(pageId);
+   ```
+
+### Add Monitoring
+
+1. **Track execution time**:
+   ```javascript
+   const startTime = Date.now();
+   // ... workflow execution
+   const executionTime = Date.now() - startTime;
+   console.log(`Workflow completed in ${executionTime}ms`);
+   ```
+
+2. **Monitor resource usage**:
+   ```javascript
+   // Log memory usage
+   const memoryUsage = process.memoryUsage();
+   console.log('Memory usage:', memoryUsage);
+   ```
 
 ## Next Steps
 
-- Review the [Workflow Overview](workflow-overview.md) to understand the structure
-- Check [Troubleshooting](troubleshooting.md) for common issues
-- Explore [API Reference](api-reference.md) for integration options
+- Review the [Workflow Overview](workflow-overview.md) to understand the current structure
+- Check [Configuration](configuration.md) for setup options
+- Set up your [Google Sheets Template](google-sheets-template.md)
+- Test modifications in a development environment first

@@ -15,14 +15,7 @@ Set these environment variables in your n8n instance:
 | `FACEBOOK_ACCESS_TOKEN` | Your Facebook access token | `EAABwzLixnjYBO...` |
 | `MANAGER_EMAIL` | Email for weekly reports | `manager@company.com` |
 
-### Optional SMTP Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SMTP_HOST` | SMTP server hostname | `smtp.gmail.com` |
-| `SMTP_PORT` | SMTP server port | `587` |
-| `SMTP_USER` | SMTP username | Your email |
-| `SMTP_PASS` | SMTP password/app password | Your password |
+**Note**: The workflow uses n8n's built-in email functionality, so SMTP configuration is handled through n8n's credential system rather than environment variables.
 
 ## Google Sheets Setup
 
@@ -36,9 +29,9 @@ Set these environment variables in your n8n instance:
 
 1. Rename the first tab to "Content Calendar"
 2. Add the column headers in row 1:
-   - **A**: Date & Time
-   - **B**: Post Text
-   - **C**: Media URL
+   - **A**: ID
+   - **B**: Date & Time
+   - **C**: Post Text
    - **D**: Status
    - **E**: Facebook Post ID
 3. Format headers with bold text and background color
@@ -61,7 +54,7 @@ For the Status column:
 
 ### 5. Format Date Column
 
-1. Select column A (Date & Time)
+1. Select column B (Date & Time)
 2. Go to Format → Number → Date time
 3. Choose format: "12/31/2023 23:59"
 
@@ -145,9 +138,9 @@ For the Status column:
 2. Select your app from dropdown
 3. Click "Generate Access Token"
 4. Request these permissions:
-   - `pages_manage_posts`
-   - `pages_read_engagement`
-   - `pages_show_list`
+   - `pages_manage_posts` (for posting content)
+   - `pages_read_engagement` (for reading insights)
+   - `read_insights` (for analytics data)
 5. Click "Generate Access Token"
 6. Copy the token
 
@@ -167,7 +160,7 @@ For the Status column:
    - Go to Google Account settings
    - Security → 2-Step Verification → App passwords
    - Generate password for "Mail"
-3. Use this app password in your SMTP configuration
+3. Use this app password in your n8n email credential configuration
 
 ### Outlook Setup
 
@@ -184,6 +177,29 @@ For the Status column:
 2. Common ports: 25, 465, 587
 3. Test connection before using in production
 
+## Workflow Configuration
+
+### Cron Triggers
+
+The workflow includes two automated triggers:
+
+1. **Content Publishing Trigger**
+   - Frequency: Every 15 minutes
+   - Expression: `*/15 * * * *`
+   - Purpose: Check for scheduled posts
+
+2. **Weekly Analytics Trigger**
+   - Frequency: Every Monday at 9:00 AM
+   - Expression: `0 9 * * 1`
+   - Purpose: Generate weekly reports
+
+### Node Positions
+
+The workflow is organized with logical positioning:
+- **Content Flow**: Nodes positioned around [300-1840, 300]
+- **Analytics Flow**: Nodes positioned around [300-1840, 800]
+- **Documentation**: Sticky notes positioned for easy reference
+
 ## Security Best Practices
 
 ### 1. Store Credentials Securely
@@ -191,6 +207,7 @@ For the Status column:
 - Use environment variables for sensitive data
 - Never commit credentials to version control
 - Use n8n's built-in credential management
+- Store Facebook tokens securely
 
 ### 2. Minimal Permissions
 
@@ -209,6 +226,7 @@ For the Status column:
 - Enable audit logging in n8n
 - Monitor Facebook app usage
 - Check Google Cloud Console logs
+- Review workflow execution history
 
 ## Testing Configuration
 
@@ -217,18 +235,21 @@ For the Status column:
 1. Try to read from your sheet
 2. Verify you can write to the sheet
 3. Check that sheet names match exactly
+4. Test column structure matches requirements
 
 ### 2. Test Facebook API
 
 1. Use Graph API Explorer to test endpoints
 2. Verify your access token works
 3. Test posting to a test page first
+4. Verify insights API access
 
 ### 3. Test Email
 
-1. Send a test email
+1. Send a test email through n8n
 2. Verify it arrives correctly
 3. Check spam folders if needed
+4. Test HTML formatting
 
 ## Troubleshooting
 
@@ -238,6 +259,7 @@ For the Status column:
 - **Invalid Token**: Verify Facebook access token hasn't expired
 - **Sheet Not Found**: Ensure sheet names match exactly
 - **SMTP Error**: Check firewall and port settings
+- **Column Mismatch**: Verify column structure matches workflow
 
 ### Debug Steps
 
@@ -245,6 +267,7 @@ For the Status column:
 2. Test API calls manually
 3. Verify all environment variables are set
 4. Check credential configurations
+5. Review workflow node connections
 
 ## Next Steps
 

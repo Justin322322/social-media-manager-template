@@ -1,55 +1,144 @@
-# Social Media Content Management Workflow for n8n
+# Social Media Content Management Workflow
 
-This n8n workflow automates the entire social media content management process, from scheduling posts to generating weekly analytics reports.
+A comprehensive n8n workflow for automated social media content publishing and analytics reporting.
 
-## Quick Start
+## Overview
 
-1. **Import the workflow**: Use `social-media-workflow.json`
-2. **Set environment variables** (see [Configuration](docs/configuration.md))
-3. **Configure credentials** for Google Sheets and Email
-4. **Test the workflow** manually
-5. **Activate** for automatic execution
-
-## Documentation
-
-**[Setup Guide](docs/setup.md)** - Complete step-by-step setup instructions  
-**[Configuration](docs/configuration.md)** - Environment variables and credentials setup  
-**[Google Sheets Template](docs/google-sheets-template.md)** - Spreadsheet structure and setup  
-**[Workflow Overview](docs/workflow-overview.md)** - How the workflow works  
-**[Customization](docs/customization.md)** - Modify timing, add features, and extend functionality  
-**[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions  
-**[API Reference](docs/api-reference.md)** - Facebook Graph API endpoints and parameters  
+This workflow automates the entire social media content management process, from scheduling posts to generating comprehensive weekly analytics reports. It integrates with Facebook Graph API and Google Sheets to provide a seamless content management experience.
 
 ## Features
 
-- **Automated Post Scheduling**: Checks content calendar every 15 minutes and posts when scheduled time arrives
-- **Facebook Integration**: Automatically creates posts on your Facebook page with text and media
-- **Status Tracking**: Updates spreadsheet with post status and Facebook post IDs
-- **Weekly Analytics**: Generates comprehensive reports with Facebook Insights data
-- **Email Reporting**: Sends formatted weekly reports to managers
-- **Google Sheets Integration**: Uses Google Sheets as the content calendar and reporting database
+### 🚀 Content Publishing
+- **Automated Scheduling**: Checks every 15 minutes for scheduled content
+- **Time Validation**: Only publishes when scheduled time arrives
+- **Status Tracking**: Updates post status from "Scheduled" to "Posted"
+- **Post ID Storage**: Captures Facebook post IDs for analytics
 
-## Prerequisites
+### 📊 Weekly Analytics
+- **Comprehensive Reporting**: Generates detailed weekly reports every Monday at 9:00 AM
+- **Performance Metrics**: Tracks impressions, engagement, and follower changes
+- **Post History**: Includes all posts from the past week
+- **Professional Email**: Sends formatted HTML reports to managers
 
+### 🛡️ Error Handling
+- **Graceful Failures**: Handles edge cases without workflow interruption
+- **Comprehensive Logging**: Provides detailed execution information
+- **Status Preservation**: Failed posts remain in "Scheduled" status
+- **Retry Logic**: Automatic retries for failed operations
+
+## Quick Start
+
+1. **Import Workflow**: Import `social-media-workflow.json` into your n8n instance
+2. **Set Environment Variables**: Configure required environment variables
+3. **Set Up Credentials**: Configure Google Sheets and email credentials
+4. **Create Google Sheets**: Set up the required sheet structure
+5. **Activate Workflow**: Enable automatic execution
+
+## Documentation
+
+### 📖 Getting Started
+- **[Setup Guide](docs/setup.md)** - Complete step-by-step setup instructions
+- **[Configuration](docs/configuration.md)** - Detailed configuration options
+- **[Google Sheets Template](docs/google-sheets-template.md)** - Sheet structure and setup
+
+### 🔧 Technical Details
+- **[Workflow Overview](docs/workflow-overview.md)** - How the workflow operates
+- **[Workflow Structure](docs/workflow-structure.md)** - Detailed node breakdown
+- **[Customization](docs/customization.md)** - How to modify and extend the workflow
+
+### 🚨 Troubleshooting
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+- **[API Reference](docs/api-reference.md)** - Integration details
+
+## Requirements
+
+### Environment Variables
+```bash
+GOOGLE_SHEETS_DOCUMENT_ID=your_document_id
+FACEBOOK_PAGE_ID=your_page_id
+FACEBOOK_ACCESS_TOKEN=your_access_token
+MANAGER_EMAIL=manager@company.com
+```
+
+### Prerequisites
 - n8n instance (self-hosted or cloud)
 - Google account with Google Sheets access
 - Facebook Business account with page access
 - Email service (SMTP or cloud provider)
 
-## What's Special About This Workflow
+## Workflow Structure
 
-✅ **No Custom Dependencies**: Uses only standard n8n nodes available in all versions  
-✅ **Facebook Integration**: Uses HTTP Request nodes to call Facebook Graph API directly  
-✅ **Production Ready**: Includes error handling, monitoring, and security best practices  
-✅ **Easy to Customize**: Well-documented structure for adding new features  
+The workflow consists of **24 nodes** organized into two main flows:
+
+### Content Publishing Flow
+1. **TRIGGER** - Content Calendar Check (every 15 minutes)
+2. **READ** - Google Sheets Calendar
+3. **FILTER** - Scheduled Posts
+4. **CHECK** - Publishing Time
+5. **PUBLISH** - Facebook Post
+6. **UPDATE** - Mark as Posted
+7. **STORE** - Facebook Post ID
+8. **SUCCESS** - Content Published
+
+### Weekly Analytics Flow
+1. **TRIGGER** - Weekly Analytics (every Monday at 9:00 AM)
+2. **ANALYTICS** - Facebook Insights
+3. **READ** - Weekly Post History
+4. **FILTER** - Last 7 Days Posts
+5. **REPORT** - Generate Analytics
+6. **APPEND** - Post Details
+7. **EMAIL** - Send Report to Manager
+8. **SUCCESS** - Analytics Complete
+
+## Google Sheets Structure
+
+### Content Calendar Sheet
+| Column | Header | Description |
+|--------|--------|-------------|
+| A | ID | Unique identifier |
+| B | Date & Time | Scheduled posting time |
+| C | Post Text | Content to post |
+| D | Status | Post status (Scheduled/Posted) |
+| E | Facebook Post ID | Auto-populated |
+
+### Weekly Report Sheet
+Automatically generated with performance metrics and post details.
+
+## Security Features
+
+- **Credential Management**: Uses n8n's built-in credential system
+- **Environment Variables**: Secure storage for sensitive data
+- **Minimal Permissions**: Only required API access
+- **Audit Logging**: Comprehensive execution tracking
+
+## Customization
+
+The workflow is designed to be easily customizable:
+- **Timing**: Adjust posting frequency and report schedules
+- **Platforms**: Extend to Twitter, LinkedIn, Instagram
+- **Analytics**: Add custom metrics and calculations
+- **Reporting**: Customize email templates and recipients
 
 ## Support
 
-- Check the [documentation](docs/) first
-- Review [troubleshooting guide](docs/troubleshooting.md)
-- [n8n Community Forum](https://community.n8n.io/)
-- [n8n Documentation](https://docs.n8n.io/)
+For issues and questions:
+1. Check the [Troubleshooting](docs/troubleshooting.md) guide
+2. Review workflow execution logs in n8n
+3. Verify environment variables and credentials
+4. Test API endpoints manually
+
+## Contributing
+
+This workflow is designed to be a starting point for social media automation. Feel free to:
+- Customize for your specific needs
+- Add new platforms and features
+- Improve error handling and monitoring
+- Share enhancements with the community
+
+## License
+
+This project is open source and available under the [LICENSE](LICENSE) file.
 
 ---
 
-**Note**: This workflow is designed for production use but should be tested thoroughly in a development environment first.
+**Note**: This workflow requires proper Facebook API permissions and Google Sheets access. Ensure compliance with platform terms of service and data protection regulations.

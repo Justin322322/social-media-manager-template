@@ -7,19 +7,19 @@ Create a new Google Sheet with the following structure for the "Content Calendar
 ### Column Headers (Row 1)
 | A | B | C | D | E |
 |---|---|---|---|---|
-| **Date & Time** | **Post Text** | **Media URL** | **Status** | **Facebook Post ID** |
+| **ID** | **Date & Time** | **Post Text** | **Status** | **Facebook Post ID** |
 
 ### Sample Data (Rows 2+)
-| Date & Time | Post Text | Media URL | Status | Facebook Post ID |
-|-------------|-----------|-----------|---------|-------------------|
-| 2024-01-15 09:00 | "Exciting news! Our new product is launching today. Check it out!" | https://example.com/product-image.jpg | Scheduled | |
-| 2024-01-16 14:30 | "Happy Monday everyone! Hope you're having a productive start to the week." | | Scheduled | |
-| 2024-01-17 12:00 | "Behind the scenes: Our team working hard to bring you the best experience!" | https://example.com/team-photo.jpg | Scheduled | |
-| 2024-01-18 16:00 | "Customer spotlight: Amazing feedback from @username about our service!" | | Scheduled | |
+| ID | Date & Time | Post Text | Status | Facebook Post ID |
+|----|-------------|-----------|---------|-------------------|
+| 1 | 2024-01-15 09:00 | "Exciting news! Our new product is launching today. Check it out!" | Scheduled | |
+| 2 | 2024-01-16 14:30 | "Happy Monday everyone! Hope you're having a productive start to the week." | Scheduled | |
+| 3 | 2024-01-17 12:00 | "Behind the scenes: Our team working hard to bring you the best experience!" | Scheduled | |
+| 4 | 2024-01-18 16:00 | "Customer spotlight: Amazing feedback from @username about our service!" | Scheduled | |
 
 ## Weekly Report Sheet Structure
 
-The "Weekly Report" sheet will be automatically populated, but you can create it with this header structure:
+The "Weekly Report" sheet will be automatically populated by the workflow, but you can create it with this header structure:
 
 ### Column Headers (Row 1)
 | A | B | C | D |
@@ -35,7 +35,7 @@ The "Weekly Report" sheet will be automatically populated, but you can create it
 
 ### 2. Set Up Content Calendar Tab
 1. Rename the first tab to "Content Calendar"
-2. Add the column headers in row 1
+2. Add the column headers in row 1 exactly as shown above
 3. Format headers with bold text and background color
 4. Freeze the first row for easy navigation
 
@@ -54,7 +54,7 @@ For the Status column, you can set up data validation:
 5. Check "Show validation help text"
 
 ### 5. Format Date Column
-1. Select column A (Date & Time)
+1. Select column B (Date & Time)
 2. Go to Format → Number → Date time
 3. Choose format: "12/31/2023 23:59"
 
@@ -67,25 +67,29 @@ For the Status column:
 
 ## Important Notes
 
+### Column Structure
+- **Column A (ID)**: Unique identifier for each post (auto-increment recommended)
+- **Column B (Date & Time)**: Scheduled posting time in YYYY-MM-DD HH:MM format
+- **Column C (Post Text)**: The actual content to be posted
+- **Column D (Status)**: Post status (Scheduled/Posted/Draft)
+- **Column E (Facebook Post ID)**: Automatically populated by the workflow
+
 ### Date Format
 - Use format: `YYYY-MM-DD HH:MM`
 - Example: `2024-01-15 09:00`
 - This ensures proper parsing by the n8n workflow
+- 24-hour format recommended for clarity
 
 ### Status Values
 - **Scheduled**: Post is queued for publishing
-- **Posted**: Post has been published to Facebook
-- **Draft**: Post is being prepared (optional)
-
-### Media URL
-- Leave empty if no media
-- Use direct links to images/videos
-- Ensure URLs are publicly accessible
+- **Posted**: Post has been successfully published to Facebook
+- **Draft**: Post is being prepared (optional status)
 
 ### Facebook Post ID
-- This column will be automatically populated
+- This column will be automatically populated by the workflow
 - Don't manually edit this column
-- Used for tracking and analytics
+- Used for tracking, analytics, and future reference
+- Format: Facebook's unique post identifier
 
 ## Sharing and Permissions
 
@@ -139,23 +143,55 @@ For the Status column:
 - Don't change column order after setting up the workflow
 - If you need to add columns, update the workflow accordingly
 
+## Content Management Best Practices
+
+### 1. Post Scheduling
+- Schedule posts at least 15 minutes in advance
+- Use consistent posting times for audience engagement
+- Consider timezone differences for your target audience
+
+### 2. Content Planning
+- Plan content at least a week in advance
+- Use the Status column to track content progress
+- Include variety in post types and timing
+
+### 3. Quality Control
+- Review post text before scheduling
+- Ensure media URLs are accessible
+- Test links before posting
+
 ## Pro Tips
 
 1. **Use Templates**: Create a template sheet for different content types
 2. **Color Coding**: Use different colors for different post categories
-3. **Tags**: Add a column for content tags or categories
+3. **Tags**: Add a column for content tags or categories (if expanding structure)
 4. **Approval Workflow**: Add approval status for content review
 5. **Backup**: Regularly export your sheet as backup
 6. **Version History**: Use Google Sheets version history to track changes
+7. **Bulk Operations**: Use Google Sheets formulas for bulk updates
 
 ## Sample Advanced Structure
 
-For more advanced users, you can expand the structure:
+For more advanced users, you can expand the structure by adding columns:
 
 | A | B | C | D | E | F | G | H |
 |---|---|---|---|---|---|---|---|
-| **Date & Time** | **Post Text** | **Media URL** | **Status** | **Facebook Post ID** | **Category** | **Approved By** | **Notes** |
-| 2024-01-15 09:00 | "New product launch!" | image.jpg | Scheduled | | Product | John | Include CTA |
-| 2024-01-16 14:30 | "Team photo" | team.jpg | Scheduled | | Culture | Sarah | Tag team members |
+| **ID** | **Date & Time** | **Post Text** | **Status** | **Facebook Post ID** | **Category** | **Approved By** | **Notes** |
+| 1 | 2024-01-15 09:00 | "New product launch!" | Scheduled | | Product | John | Include CTA |
+| 2 | 2024-01-16 14:30 | "Team photo" | Scheduled | | Culture | Sarah | Tag team members |
 
 This advanced structure allows for better content organization and approval workflows.
+
+## Troubleshooting
+
+### Common Issues
+1. **Column Mismatch**: Ensure column structure matches exactly
+2. **Date Format**: Verify date format is YYYY-MM-DD HH:MM
+3. **Sheet Names**: Check that sheet names match exactly
+4. **Permissions**: Verify service account has editor access
+
+### Solutions
+1. **Recreate Structure**: If columns are wrong, recreate the sheet structure
+2. **Check Formatting**: Ensure date column uses proper date format
+3. **Verify Names**: Double-check sheet and column names
+4. **Test Access**: Test service account access manually
