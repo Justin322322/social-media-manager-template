@@ -12,13 +12,13 @@ This n8n workflow automates the entire social media content management process, 
 
 ## Documentation
 
-📚 **[Setup Guide](docs/setup.md)** - Complete step-by-step setup instructions  
-⚙️ **[Configuration](docs/configuration.md)** - Environment variables and credentials setup  
-📊 **[Google Sheets Template](docs/google-sheets-template.md)** - Spreadsheet structure and setup  
-🔧 **[Workflow Overview](docs/workflow-overview.md)** - How the workflow works  
-🚀 **[Customization](docs/customization.md)** - Modify timing, add features, and extend functionality  
-🐛 **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions  
-📖 **[API Reference](docs/api-reference.md)** - Facebook Graph API endpoints and parameters  
+**[Setup Guide](docs/setup.md)** - Complete step-by-step setup instructions  
+**[Configuration](docs/configuration.md)** - Environment variables and credentials setup  
+**[Google Sheets Template](docs/google-sheets-template.md)** - Spreadsheet structure and setup  
+**[Workflow Overview](docs/workflow-overview.md)** - How the workflow works  
+**[Customization](docs/customization.md)** - Modify timing, add features, and extend functionality  
+**[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions  
+**[API Reference](docs/api-reference.md)** - Facebook Graph API endpoints and parameters  
 
 ## Features
 
@@ -45,10 +45,10 @@ This n8n workflow automates the entire social media content management process, 
 
 ## Support
 
-- 📖 Check the [documentation](docs/) first
-- 🐛 Review [troubleshooting guide](docs/troubleshooting.md)
-- 💬 [n8n Community Forum](https://community.n8n.io/)
-- 📚 [n8n Documentation](https://docs.n8n.io/)
+- Check the [documentation](docs/) first
+- Review [troubleshooting guide](docs/troubleshooting.md)
+- [n8n Community Forum](https://community.n8n.io/)
+- [n8n Documentation](https://docs.n8n.io/)
 
 ---
 

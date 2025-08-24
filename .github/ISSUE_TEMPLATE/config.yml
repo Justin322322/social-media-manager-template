@@ -1,0 +1,20 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Setup Guide
+    url: https://github.com/Justin322322/social-media-manager-template/blob/main/docs/setup.md
+    about: Complete step-by-step setup instructions
+  - name: Configuration
+    url: https://github.com/Justin322322/social-media-manager-template/blob/main/docs/configuration.md
+    about: Environment variables and credentials setup
+  - name: Workflow Overview
+    url: https://github.com/Justin322322/social-media-manager-template/blob/main/docs/workflow-overview.md
+    about: How the workflow operates
+  - name: Customization
+    url: https://github.com/Justin322322/social-media-manager-template/blob/main/docs/customization.md
+    about: Modify and extend the workflow
+  - name: Troubleshooting
+    url: https://github.com/Justin322322/social-media-manager-template/blob/main/docs/troubleshooting.md
+    about: Common issues and solutions
+  - name: API Reference
+    url: https://github.com/Justin322322/social-media-manager-template/blob/main/docs/api-reference.md
+    about: Facebook Graph API technical details
