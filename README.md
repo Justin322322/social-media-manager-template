@@ -2,25 +2,28 @@
 
 A comprehensive n8n workflow for automated social media content publishing and analytics reporting.
 
+<img width="1730" height="550" alt="image" src="https://github.com/user-attachments/assets/339e2311-2017-47be-a473-8aa226743f95" />
+
+
 ## Overview
 
 This workflow automates the entire social media content management process, from scheduling posts to generating comprehensive weekly analytics reports. It integrates with Facebook Graph API and Google Sheets to provide a seamless content management experience.
 
 ## Features
 
-### 🚀 Content Publishing
+### Content Publishing
 - **Automated Scheduling**: Checks every 15 minutes for scheduled content
 - **Time Validation**: Only publishes when scheduled time arrives
 - **Status Tracking**: Updates post status from "Scheduled" to "Posted"
 - **Post ID Storage**: Captures Facebook post IDs for analytics
 
-### 📊 Weekly Analytics
+### Weekly Analytics
 - **Comprehensive Reporting**: Generates detailed weekly reports every Monday at 9:00 AM
 - **Performance Metrics**: Tracks impressions, engagement, and follower changes
 - **Post History**: Includes all posts from the past week
 - **Professional Email**: Sends formatted HTML reports to managers
 
-### 🛡️ Error Handling
+### Error Handling
 - **Graceful Failures**: Handles edge cases without workflow interruption
 - **Comprehensive Logging**: Provides detailed execution information
 - **Status Preservation**: Failed posts remain in "Scheduled" status
@@ -36,7 +39,7 @@ This workflow automates the entire social media content management process, from
 
 ## Documentation
 
-### 📖 Getting Started
+### Getting Started
 - **[Setup Guide](docs/setup.md)** - Complete step-by-step setup instructions
 - **[Configuration](docs/configuration.md)** - Detailed configuration options
 - **[Google Sheets Template](docs/google-sheets-template.md)** - Sheet structure and setup
@@ -46,7 +49,7 @@ This workflow automates the entire social media content management process, from
 - **[Workflow Structure](docs/workflow-structure.md)** - Detailed node breakdown
 - **[Customization](docs/customization.md)** - How to modify and extend the workflow
 
-### 🚨 Troubleshooting
+### Troubleshooting
 - **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
 - **[API Reference](docs/api-reference.md)** - Integration details
 
