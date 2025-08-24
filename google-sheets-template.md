@@ -12,10 +12,10 @@ Create a new Google Sheet with the following structure for the "Content Calendar
 ### Sample Data (Rows 2+)
 | Date & Time | Post Text | Media URL | Status | Facebook Post ID |
 |-------------|-----------|-----------|---------|-------------------|
-| 2024-01-15 09:00 | "🚀 Exciting news! Our new product is launching today. Check it out!" | https://example.com/product-image.jpg | Scheduled | |
-| 2024-01-16 14:30 | "Happy Monday everyone! Hope you're having a productive start to the week. 💪" | | Scheduled | |
-| 2024-01-17 12:00 | "Behind the scenes: Our team working hard to bring you the best experience! 👥" | https://example.com/team-photo.jpg | Scheduled | |
-| 2024-01-18 16:00 | "Customer spotlight: Amazing feedback from @username about our service! 🙏" | | Scheduled | |
+| 2024-01-15 09:00 | "Exciting news! Our new product is launching today. Check it out!" | https://example.com/product-image.jpg | Scheduled | |
+| 2024-01-16 14:30 | "Happy Monday everyone! Hope you're having a productive start to the week." | | Scheduled | |
+| 2024-01-17 12:00 | "Behind the scenes: Our team working hard to bring you the best experience!" | https://example.com/team-photo.jpg | Scheduled | |
+| 2024-01-18 16:00 | "Customer spotlight: Amazing feedback from @username about our service!" | | Scheduled | |
 
 ## Weekly Report Sheet Structure
 
