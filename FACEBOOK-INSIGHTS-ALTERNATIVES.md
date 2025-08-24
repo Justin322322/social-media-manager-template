@@ -6,7 +6,7 @@ The Facebook Insights node is not available in your current n8n version, showing
 
 ## Solution: Use HTTP Request Node
 
-I've created an updated workflow (`social-media-workflow-updated.json`) that replaces the Facebook Insights node with an HTTP Request node to call Facebook's Graph API directly.
+I've created a completely fixed workflow (`social-media-workflow-fixed.json`) that replaces both problematic nodes with HTTP Request nodes to call Facebook's Graph API directly.
 
 ### How It Works
 
@@ -29,14 +29,17 @@ https://graph.facebook.com/v18.0/{page-id}/insights
 
 ### Setup Steps
 
-1. **Import the updated workflow**: Use `social-media-workflow-updated.json`
+1. **Import the fixed workflow**: Use `social-media-workflow-fixed.json`
 2. **Set environment variables**:
+   - `GOOGLE_SHEETS_DOCUMENT_ID`: Your Google Sheets document ID
    - `FACEBOOK_PAGE_ID`: Your Facebook page ID
    - `FACEBOOK_ACCESS_TOKEN`: Your Facebook access token
-3. **Configure the HTTP Request node**:
-   - Set the URL with your page ID
-   - Add your access token in the Authorization header
-   - Verify the query parameters match your needs
+   - `MANAGER_EMAIL`: Email address for weekly reports
+3. **Configure the HTTP Request nodes**:
+   - Both Facebook posting and insights use HTTP Request nodes
+   - Set the URLs with your page ID
+   - Add your access token in the Authorization headers
+   - Verify the parameters match your needs
 
 ## Alternative Option 2: Install Facebook Node Package
 
@@ -72,10 +75,11 @@ For simple use cases, you can:
 
 ## Recommended Approach
 
-**Use the HTTP Request node approach** (Option 1) because:
+**Use the fixed workflow approach** (Option 1) because:
 - ✅ Works with any n8n version
 - ✅ No additional installations required
 - ✅ Direct access to Facebook Graph API
+- ✅ Both posting and insights functionality included
 - ✅ Full control over the request parameters
 - ✅ Easy to customize and extend
 
@@ -124,8 +128,15 @@ For more metrics and parameters, refer to the [Facebook Graph API Insights Docum
 
 ## Next Steps
 
-1. Import the updated workflow file
-2. Configure your Facebook credentials
-3. Test the HTTP Request node with a simple API call
+1. Import the fixed workflow file (`social-media-workflow-fixed.json`)
+2. Configure your environment variables
+3. Test both HTTP Request nodes with simple API calls
 4. Verify the data structure matches your expectations
 5. Customize the metrics and parameters as needed
+
+## What's Fixed
+
+The `social-media-workflow-fixed.json` file resolves both issues:
+- **Facebook Posting**: Now uses HTTP Request to Facebook Graph API
+- **Facebook Insights**: Now uses HTTP Request to Facebook Insights API
+- **No Custom Dependencies**: Uses only standard n8n nodes

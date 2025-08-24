@@ -83,9 +83,25 @@ SMTP_PASS=your_app_password
 
 1. In n8n, go to Workflows
 2. Click "Import from File"
-3. Select the `social-media-workflow.json` file
+3. Select the `social-media-workflow-fixed.json` file (this version uses only standard n8n nodes)
 4. Update the credentials for each node
-5. Update the Google Sheets document ID in the workflow
+5. Set your environment variables (see below)
+
+**Important**: Use the `social-media-workflow-fixed.json` file as it's compatible with all n8n versions and doesn't require additional node packages.
+
+## Fixed Workflow Compatibility
+
+This workflow has been updated to use only standard n8n nodes that are available in all versions:
+
+- **Facebook Posting**: Uses HTTP Request node to call Facebook Graph API directly
+- **Facebook Insights**: Uses HTTP Request node to call Facebook Insights API directly
+- **No Custom Nodes Required**: Works with any n8n installation
+
+### Files Available
+
+- **`social-media-workflow-fixed.json`**: Main workflow file (use this one)
+- **`social-media-workflow.json`**: Original version (requires Facebook nodes)
+- **`social-media-workflow-updated.json`**: Intermediate version
 
 ## Workflow Flow
 
