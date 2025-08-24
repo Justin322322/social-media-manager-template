@@ -102,7 +102,7 @@
           "parameters": [
             { "name": "message", "value": "={{ $json['Post Text'] || '' }}" },
             { "name": "link", "value": "={{ $json['Media URL'] || '' }}" },
-            { "name": "published", "value": "true" }
+            { "name": "published", "value": true }
           ]
         }
       },
@@ -118,7 +118,7 @@
         "operation": "update",
         "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
         "sheetName": "Content Calendar",
-        "range": "D{{ $json.rowIndex || $json.ID }}",
+        "range": "D{{ $json.rowIndex ? $json.rowIndex + 2 : ($json.ID || 2) }}",
         "values": [["Posted"]]
       },
       "id": "update-status-posted",
@@ -133,7 +133,7 @@
         "operation": "update",
         "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
         "sheetName": "Content Calendar",
-        "range": "E{{ $json.rowIndex || $json.ID }}",
+        "range": "E{{ $json.rowIndex ? $json.rowIndex + 2 : ($json.ID || 2) }}",
         "values": [["={{ $('PUBLISH - Facebook Post').first()?.json?.id || '' }}"]]
       },
       "id": "update-facebook-id",
@@ -170,7 +170,6 @@
       "position": [860, 180],
       "notes": "Handles gracefully when scheduled post time hasn't arrived yet"
     },
-    
     {
       "parameters": {
         "url": "https://graph.facebook.com/v18.0/{{ $env.FACEBOOK_PAGE_ID }}/insights",
@@ -316,8 +315,6 @@
       "position": [1740, 800],
       "notes": "Logs successful completion of weekly analytics workflow"
     },
-
-    
     {
       "parameters": { "content": "## Content Publishing Workflow\n\n..." },
       "id": "content-workflow-note",
@@ -455,7 +452,7 @@
       "name": "Analytics"
     }
   ],
-    "triggerCount": 2,
+  "triggerCount": 2,
   "updatedAt": "2024-01-01T00:00:00.000Z",
   "versionId": "clean-v1.0"
 }
