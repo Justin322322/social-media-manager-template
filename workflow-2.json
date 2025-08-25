@@ -1,0 +1,185 @@
+{
+  "name": "Social Post Monitor & Alert",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hour",
+              "expression": "1"
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Trigger - Every 1 Hour",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [300, 300]
+    },
+    {
+      "parameters": {
+        "resource": "tweet",
+        "operation": "search",
+        "query": "YourBrandName",
+        "limit": 5,
+        "options": {}
+      },
+      "id": "twitter-search",
+      "name": "Fetch Twitter Mentions",
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 2,
+      "position": [550, 300]
+    },
+    {
+      "parameters": {
+        "operation": "analyze",
+        "text": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "sentiment-analysis",
+      "name": "Sentiment Analysis",
+      "type": "n8n-nodes-base.openai",
+      "typeVersion": 1,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "sentiment-check",
+              "leftValue": "={{ $json.sentiment }}",
+              "rightValue": "negative",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-negative",
+      "name": "IF Negative Sentiment?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "channel": "#alerts",
+        "message": "⚠ Negative Tweet Found: {{$json.text}}",
+        "options": {}
+      },
+      "id": "slack-alert",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [1300, 200]
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "create",
+        "databaseId": "YOUR_NOTION_DB_ID",
+        "title": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "log-notion",
+      "name": "Log to Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 1,
+      "position": [1300, 400]
+    }
+  ],
+  "connections": {
+    "cron-trigger": {
+      "main": [
+        [
+          {
+            "node": "twitter-search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "twitter-search": {
+      "main": [
+        [
+          {
+            "node": "sentiment-analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sentiment-analysis": {
+      "main": [
+        [
+          {
+            "node": "if-negative",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if-negative": {
+      "main": [
+        [
+          {
+            "node": "slack-alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "log-notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "social-monitoring",
+      "name": "Social Monitoring"
+    },
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "alerts",
+      "name": "Alerts"
+    },
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "automation",
+      "name": "Automation"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1.0.0"
+}
+  

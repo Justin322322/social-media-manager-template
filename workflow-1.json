@@ -1,0 +1,129 @@
+{
+  "name": "Lead Capture & Enrichment",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "triggerOn": "anyUpdate",
+        "sheetId": "YOUR_SHEET_ID",
+        "range": "FormResponses!A:C"
+      },
+      "id": "1",
+      "name": "Trigger - New Form Response",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [300, 300],
+      "webhookId": "form-response-trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "email-check",
+              "leftValue": "={{ $json[\"email\"] }}",
+              "rightValue": "@company.com",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2",
+      "name": "IF Company Email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "resource": "person",
+        "operation": "enrich",
+        "email": "={{ $json[\"email\"] }}"
+      },
+      "id": "3",
+      "name": "Enrich via Clearbit",
+      "type": "n8n-nodes-base.clearbit",
+      "typeVersion": 1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "YOUR_SHEET_ID",
+        "range": "Leads!A:C",
+        "options": {},
+        "data": [
+          {
+            "values": [
+              "={{ $json[\"name\"] || \"Unknown\" }}",
+              "={{ $json[\"email\"] }}",
+              "={{ $json[\"company\"] || \"N/A\" }}"
+            ]
+          }
+        ]
+      },
+      "id": "4",
+      "name": "Save to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [1200, 300]
+    }
+  ],
+  "connections": {
+    "Trigger - New Form Response": {
+      "main": [
+        [
+          { "node": "IF Company Email?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "IF Company Email?": {
+      "main": [
+        [
+          { "node": "Enrich via Clearbit", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Save to Google Sheets", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Enrich via Clearbit": {
+      "main": [
+        [
+          { "node": "Save to Google Sheets", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "lead-capture",
+      "name": "Lead Capture"
+    },
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "automation",
+      "name": "Automation"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1.0.0"
+}
