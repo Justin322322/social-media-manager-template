@@ -1,27 +1,48 @@
 {
-  "name": "Lead Capture & Enrichment",
+  "name": "Lead Capture & Enrichment - Fixed",
   "active": false,
   "nodes": [
     {
       "parameters": {
-        "triggerOn": "anyUpdate",
-        "sheetId": "YOUR_SHEET_ID",
-        "range": "FormResponses!A:C"
+        "event": "rowAdded",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Lead Form Responses"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "FormResponses"
+        },
+        "options": {
+          "scope": "thisDocument"
+        }
       },
-      "id": "1",
+      "id": "trigger-new-form",
       "name": "Trigger - New Form Response",
       "type": "n8n-nodes-base.googleSheetsTrigger",
       "typeVersion": 1,
       "position": [300, 300],
-      "webhookId": "form-response-trigger"
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
     },
     {
       "parameters": {
         "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
           "conditions": [
             {
               "id": "email-check",
-              "leftValue": "={{ $json[\"email\"] }}",
+              "leftValue": "={{ $json.email }}",
               "rightValue": "@company.com",
               "operator": {
                 "type": "string",
@@ -33,7 +54,7 @@
         },
         "options": {}
       },
-      "id": "2",
+      "id": "if-company-email",
       "name": "IF Company Email?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
@@ -43,59 +64,186 @@
       "parameters": {
         "resource": "person",
         "operation": "enrich",
-        "email": "={{ $json[\"email\"] }}"
+        "email": "={{ $json.email }}",
+        "additionalFields": {}
       },
-      "id": "3",
+      "id": "enrich-clearbit",
       "name": "Enrich via Clearbit",
       "type": "n8n-nodes-base.clearbit",
       "typeVersion": 1,
-      "position": [900, 200]
+      "position": [900, 200],
+      "credentials": {
+        "clearbitApi": {
+          "id": "clearbit-credentials",
+          "name": "Clearbit API"
+        }
+      }
     },
     {
       "parameters": {
-        "operation": "append",
-        "sheetId": "YOUR_SHEET_ID",
-        "range": "Leads!A:C",
-        "options": {},
-        "data": [
-          {
-            "values": [
-              "={{ $json[\"name\"] || \"Unknown\" }}",
-              "={{ $json[\"email\"] }}",
-              "={{ $json[\"company\"] || \"N/A\" }}"
-            ]
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_LEADS_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Leads Database"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $('Trigger - New Form Response').item.json.name || $json.person?.name?.fullName || 'Unknown' }}",
+            "Email": "={{ $('Trigger - New Form Response').item.json.email }}",
+            "Company": "={{ $json.person?.employment?.name || $('Trigger - New Form Response').item.json.company || 'N/A' }}",
+            "Title": "={{ $json.person?.employment?.title || 'N/A' }}",
+            "Location": "={{ $json.person?.location || 'N/A' }}",
+            "Enriched": "={{ $json.person ? 'Yes' : 'No' }}",
+            "Date Added": "={{ new Date().toISOString().split('T')[0] }}"
           }
-        ]
+        },
+        "options": {}
       },
-      "id": "4",
-      "name": "Save to Google Sheets",
+      "id": "save-enriched-lead",
+      "name": "Save Enriched Lead",
       "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 1,
-      "position": [1200, 300]
+      "typeVersion": 4,
+      "position": [1200, 200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_LEADS_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Leads Database"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json.name || 'Unknown' }}",
+            "Email": "={{ $json.email }}",
+            "Company": "={{ $json.company || 'Personal Email' }}",
+            "Title": "N/A",
+            "Location": "N/A",
+            "Enriched": "No",
+            "Date Added": "={{ new Date().toISOString().split('T')[0] }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "save-basic-lead",
+      "name": "Save Basic Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1200, 400],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channel": "#leads",
+        "text": "🎯 New Lead Captured!\n\n**Name:** {{ $('Trigger - New Form Response').item.json.name || 'Unknown' }}\n**Email:** {{ $('Trigger - New Form Response').item.json.email }}\n**Company:** {{ $json.person?.employment?.name || $('Trigger - New Form Response').item.json.company || 'Personal' }}\n**Title:** {{ $json.person?.employment?.title || 'N/A' }}\n**Enriched:** {{ $json.person ? '✅ Yes' : '❌ No' }}",
+        "otherOptions": {}
+      },
+      "id": "notify-slack",
+      "name": "Notify Team via Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1500, 300],
+      "credentials": {
+        "slackApi": {
+          "id": "slack-credentials",
+          "name": "Slack API"
+        }
+      }
     }
   ],
   "connections": {
     "Trigger - New Form Response": {
       "main": [
         [
-          { "node": "IF Company Email?", "type": "main", "index": 0 }
+          {
+            "node": "IF Company Email?",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
     "IF Company Email?": {
       "main": [
         [
-          { "node": "Enrich via Clearbit", "type": "main", "index": 0 }
+          {
+            "node": "Enrich via Clearbit",
+            "type": "main",
+            "index": 0
+          }
         ],
         [
-          { "node": "Save to Google Sheets", "type": "main", "index": 0 }
+          {
+            "node": "Save Basic Lead",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
     "Enrich via Clearbit": {
       "main": [
         [
-          { "node": "Save to Google Sheets", "type": "main", "index": 0 }
+          {
+            "node": "Save Enriched Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Enriched Lead": {
+      "main": [
+        [
+          {
+            "node": "Notify Team via Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Basic Lead": {
+      "main": [
+        [
+          {
+            "node": "Notify Team via Slack",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     }
@@ -108,7 +256,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": ""
   },
-  "staticData": null,
+  "staticData": {},
   "tags": [
     {
       "createdAt": "2024-01-01T00:00:00.000Z",
@@ -121,9 +269,15 @@
       "updatedAt": "2024-01-01T00:00:00.000Z",
       "id": "automation",
       "name": "Automation"
+    },
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "crm",
+      "name": "CRM"
     }
   ],
   "triggerCount": 1,
   "updatedAt": "2024-01-01T00:00:00.000Z",
-  "versionId": "1.0.0"
+  "versionId": "2.0.0"
 }

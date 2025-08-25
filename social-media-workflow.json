@@ -1,35 +1,62 @@
 {
-  "name": "My workflow 3",
+  "name": "Social Media Content Calendar & Analytics - Fixed",
+  "active": false,
   "nodes": [
     {
-      "parameters": {},
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hour",
+              "expression": "1"
+            }
+          ]
+        }
+      },
       "id": "14339b9c-bdee-4d35-b971-6754166f93f8",
       "name": "TRIGGER - Content Calendar Check",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
-      "position": [
-        -1392,
-        -144
-      ]
+      "position": [-1392, -144]
     },
     {
       "parameters": {
-        "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
-        "sheetName": "Content Calendar",
-        "options": {}
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_DOCUMENT_ID",
+          "mode": "list",
+          "cachedResultName": "Content Calendar"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Content Calendar"
+        },
+        "options": {
+          "range": "A:H"
+        }
       },
       "id": "60410419-39b1-4299-9b81-941068d4c355",
       "name": "READ - Google Sheets Calendar",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [
-        -1168,
-        -144
-      ]
+      "position": [-1168, -144],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
     },
     {
       "parameters": {
         "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
           "conditions": [
             {
               "id": "status-check",
@@ -49,27 +76,24 @@
       "name": "FILTER - Scheduled Posts",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [
-        -944,
-        -144
-      ]
+      "position": [-944, -144]
     },
     {
       "parameters": {
-        "jsCode": "console.log('No scheduled posts found at this time');\nreturn [];"
+        "jsCode": "// Log that no scheduled posts were found\nconsole.log('No scheduled posts found at this time');\n\n// Return empty array to stop execution\nreturn [];"
       },
       "id": "c7cbaf32-0d70-47d9-a1bf-45ece1e27ff4",
       "name": "INFO - No Scheduled Posts",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -720,
-        -48
-      ]
+      "position": [-720, -48]
     },
     {
       "parameters": {
         "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
           "conditions": [
             {
               "id": "time-check",
@@ -89,39 +113,24 @@
       "name": "CHECK - Publishing Time",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [
-        -720,
-        -240
-      ]
+      "position": [-720, -240]
     },
     {
       "parameters": {
-        "jsCode": "console.log('Post time has not arrived yet');\nreturn [];"
+        "jsCode": "// Log that post time hasn't arrived\nconsole.log('Post time has not arrived yet:', $json['Date & Time']);\n\n// Return empty array to stop execution\nreturn [];"
       },
       "id": "a46adc0b-5f5b-4052-8d62-b1bcfd98d010",
       "name": "WAIT - Post Time Pending",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -496,
-        -144
-      ]
+      "position": [-496, -144]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://graph.facebook.com/v18.0/{{ $env.FACEBOOK_PAGE_ID }}/feed",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer {{ $env.FACEBOOK_ACCESS_TOKEN }}"
-            }
-          ]
-        },
+        "url": "https://graph.facebook.com/v18.0/YOUR_FACEBOOK_PAGE_ID/feed",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -135,7 +144,7 @@
             },
             {
               "name": "published",
-              "value": true
+              "value": "true"
             }
           ]
         },
@@ -145,72 +154,129 @@
       "name": "PUBLISH - Facebook Post",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        -496,
-        -336
-      ]
+      "position": [-496, -336],
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "facebook-graph-credentials",
+          "name": "Facebook Graph API"
+        }
+      }
     },
     {
       "parameters": {
+        "resource": "sheet",
         "operation": "update",
-        "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
-        "sheetName": "Content Calendar",
-        "options": {}
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_DOCUMENT_ID",
+          "mode": "list",
+          "cachedResultName": "Content Calendar"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Content Calendar"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Posted",
+            "Posted Date": "={{ new Date().toISOString() }}"
+          }
+        },
+        "options": {
+          "whereClause": "={{ 'Post Text=\"' + $json['Post Text'] + '\"' }}"
+        }
       },
       "id": "fc94a5fe-341a-48b4-9ef9-6b0952550c46",
       "name": "UPDATE - Mark as Posted",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [
-        -272,
-        -336
-      ]
+      "position": [-272, -336],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
     },
     {
       "parameters": {
+        "resource": "sheet",
         "operation": "update",
-        "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
-        "sheetName": "Content Calendar",
-        "options": {}
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_DOCUMENT_ID",
+          "mode": "list",
+          "cachedResultName": "Content Calendar"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Content Calendar"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Facebook Post ID": "={{ $('PUBLISH - Facebook Post').item.json.id }}",
+            "Post URL": "={{ 'https://facebook.com/' + $('PUBLISH - Facebook Post').item.json.id }}"
+          }
+        },
+        "options": {
+          "whereClause": "={{ 'Post Text=\"' + $('CHECK - Publishing Time').item.json['Post Text'] + '\"' }}"
+        }
       },
       "id": "12595b1a-6889-46ef-8f8b-97242402400a",
       "name": "STORE - Facebook Post ID",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [
-        -48,
-        -336
-      ]
+      "position": [-48, -336],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
     },
     {
       "parameters": {
-        "jsCode": "console.log('Content publishing workflow completed successfully');\nreturn $json;"
+        "jsCode": "// Log successful completion\nconsole.log('Content publishing workflow completed successfully');\nconsole.log('Posted:', $json);\n\nreturn {\n  status: 'success',\n  message: 'Content published and tracked',\n  postId: $('PUBLISH - Facebook Post').item.json.id,\n  timestamp: new Date().toISOString()\n};"
       },
       "id": "10e6c006-8f1b-4901-bde1-76ef475d0ba5",
       "name": "SUCCESS - Content Published",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        176,
-        -336
-      ]
+      "position": [176, -336]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weekDay",
+              "expression": "1"
+            },
+            {
+              "field": "hour",
+              "expression": "9"
+            }
+          ]
+        }
+      },
       "id": "9701419c-5926-4291-9fb1-2d7977f4a419",
       "name": "TRIGGER - Weekly Analytics",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
-      "position": [
-        -1392,
-        272
-      ]
+      "position": [-1392, 272]
     },
     {
       "parameters": {
-        "url": "https://graph.facebook.com/v18.0/{{ $env.FACEBOOK_PAGE_ID }}/insights",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "method": "GET",
+        "url": "https://graph.facebook.com/v18.0/YOUR_FACEBOOK_PAGE_ID/insights",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -224,20 +290,11 @@
             },
             {
               "name": "since",
-              "value": "={{ new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() }}"
+              "value": "={{ new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] }}"
             },
             {
               "name": "until",
-              "value": "={{ new Date().toISOString() }}"
-            }
-          ]
-        },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer {{ $env.FACEBOOK_ACCESS_TOKEN }}"
+              "value": "={{ new Date().toISOString().split('T')[0] }}"
             }
           ]
         },
@@ -247,29 +304,52 @@
       "name": "ANALYTICS - Facebook Insights",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        -1168,
-        272
-      ]
+      "position": [-1168, 272],
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "facebook-graph-credentials",
+          "name": "Facebook Graph API"
+        }
+      }
     },
     {
       "parameters": {
-        "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
-        "sheetName": "Content Calendar",
-        "options": {}
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_DOCUMENT_ID",
+          "mode": "list",
+          "cachedResultName": "Content Calendar"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Content Calendar"
+        },
+        "options": {
+          "range": "A:H"
+        }
       },
       "id": "fca1989f-d445-435e-bda0-6ccd80a76bef",
       "name": "READ - Weekly Post History",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [
-        -944,
-        272
-      ]
+      "position": [-944, 272],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
     },
     {
       "parameters": {
         "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
           "conditions": [
             {
               "id": "date-filter",
@@ -298,86 +378,104 @@
       "name": "FILTER - Last 7 Days Posts",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [
-        -720,
-        272
-      ]
+      "position": [-720, 272]
     },
     {
       "parameters": {
-        "jsCode": "console.log('No posts found for weekly report period');\nreturn [];"
+        "jsCode": "// Log that no posts were found for the weekly report\nconsole.log('No posts found for weekly report period');\n\n// Return empty array to stop execution\nreturn [];"
       },
       "id": "9abb2734-1e5d-4188-a7cb-0db1d7e34f6a",
       "name": "INFO - No Weekly Posts",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -496,
-        368
-      ]
+      "position": [-496, 368]
     },
     {
       "parameters": {
-        "operation": "create",
-        "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
-        "options": {}
+        "jsCode": "// Combine Facebook Analytics with Post Data\nconst analytics = $('ANALYTICS - Facebook Insights').item.json.data;\nconst posts = $input.all();\n\n// Calculate summary metrics\nconst summary = {\n  totalPosts: posts.length,\n  weekStartDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),\n  weekEndDate: new Date().toLocaleDateString(),\n  impressions: 0,\n  engagedUsers: 0,\n  newFollowers: 0,\n  unfollowers: 0\n};\n\n// Process analytics data\nif (analytics && Array.isArray(analytics)) {\n  analytics.forEach(metric => {\n    if (metric.name === 'page_impressions' && metric.values?.[0]?.value) {\n      summary.impressions = metric.values[0].value;\n    }\n    if (metric.name === 'page_engaged_users' && metric.values?.[0]?.value) {\n      summary.engagedUsers = metric.values[0].value;\n    }\n    if (metric.name === 'page_fan_adds' && metric.values?.[0]?.value) {\n      summary.newFollowers = metric.values[0].value;\n    }\n    if (metric.name === 'page_fan_removes' && metric.values?.[0]?.value) {\n      summary.unfollowers = metric.values[0].value;\n    }\n  });\n}\n\n// Return combined data\nreturn {\n  summary,\n  posts: posts.map(post => ({\n    postText: post.json['Post Text'] || 'N/A',\n    dateTime: post.json['Date & Time'] || 'N/A',\n    status: post.json['Status'] || 'N/A',\n    postId: post.json['Facebook Post ID'] || 'N/A'\n  })),\n  generatedAt: new Date().toISOString()\n};"
       },
       "id": "143d5dba-6ffa-45a9-8ed1-25b91a2a0b8c",
       "name": "REPORT - Generate Analytics",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4,
-      "position": [
-        -496,
-        176
-      ]
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-496, 176]
     },
     {
       "parameters": {
-        "operation": "append",
-        "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
-        "sheetName": "Weekly Report",
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_DOCUMENT_ID",
+          "mode": "list",
+          "cachedResultName": "Content Calendar"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=1",
+          "mode": "list",
+          "cachedResultName": "Weekly Report"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Week Start": "={{ $json.summary.weekStartDate }}",
+            "Week End": "={{ $json.summary.weekEndDate }}",
+            "Total Posts": "={{ $json.summary.totalPosts }}",
+            "Impressions": "={{ $json.summary.impressions }}",
+            "Engaged Users": "={{ $json.summary.engagedUsers }}",
+            "New Followers": "={{ $json.summary.newFollowers }}",
+            "Unfollowers": "={{ $json.summary.unfollowers }}",
+            "Generated At": "={{ $json.generatedAt }}"
+          }
+        },
         "options": {}
       },
       "id": "4414fc9e-a895-4e66-b739-4008b79ae9ca",
-      "name": "APPEND - Post Details",
+      "name": "APPEND - Weekly Summary",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [
-        -272,
-        176
-      ]
+      "position": [-272, 176],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
     },
     {
       "parameters": {
-        "toEmail": "={{ $env.MANAGER_EMAIL }}",
-        "subject": "Weekly Social Media Report - {{ new Date().toLocaleDateString() }}",
-        "options": {}
+        "fromEmail": "noreply@yourcompany.com",
+        "toEmail": "manager@yourcompany.com",
+        "subject": "Weekly Social Media Report - {{ $json.summary.weekStartDate }} to {{ $json.summary.weekEndDate }}",
+        "message": "Weekly Social Media Performance Report\\n\\n📊 SUMMARY:\\n• Total Posts: {{ $json.summary.totalPosts }}\\n• Page Impressions: {{ $json.summary.impressions }}\\n• Engaged Users: {{ $json.summary.engagedUsers }}\\n• New Followers: {{ $json.summary.newFollowers }}\\n• Unfollowers: {{ $json.summary.unfollowers }}\\n\\n📝 POSTS THIS WEEK:\\n{% for post in $json.posts %}\\n• {{ post.postText }} ({{ post.dateTime }})\\n{% endfor %}\\n\\nReport generated: {{ $json.generatedAt }}",
+        "options": {
+          "allowUnauthorizedCerts": false
+        }
       },
       "id": "d51ff333-58e7-44ad-aa5e-5801df558580",
       "name": "EMAIL - Send Report to Manager",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
-      "position": [
-        -48,
-        176
-      ],
-      "webhookId": "c29bae2a-b045-4af9-9856-e57b53a0f96f"
+      "position": [-48, 176],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP Email"
+        }
+      }
     },
     {
       "parameters": {
-        "jsCode": "console.log('Weekly analytics workflow completed successfully');\nreturn $json;"
+        "jsCode": "// Log successful completion of analytics workflow\nconsole.log('Weekly analytics workflow completed successfully');\nconsole.log('Report summary:', $json.summary);\n\nreturn {\n  status: 'success',\n  message: 'Weekly analytics report generated and sent',\n  reportData: $json.summary,\n  completedAt: new Date().toISOString()\n};"
       },
       "id": "b881425d-053a-4c01-8615-c5521bf15a20",
       "name": "SUCCESS - Analytics Complete",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        176,
-        176
-      ]
+      "position": [176, 176]
     }
   ],
-  "pinData": {},
   "connections": {
     "TRIGGER - Content Calendar Check": {
       "main": [
@@ -525,14 +623,14 @@
       "main": [
         [
           {
-            "node": "APPEND - Post Details",
+            "node": "APPEND - Weekly Summary",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "APPEND - Post Details": {
+    "APPEND - Weekly Summary": {
       "main": [
         [
           {
@@ -555,16 +653,11 @@
       ]
     }
   },
-  "active": false,
+  "pinData": {},
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "767b881b-9503-4bbd-b85b-9a6e06b89a62",
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "5074ce53ea8e9b14aec02794b77fdf923c16754217f8207c9fe14d7038fb42b6"
-  },
-  "id": "Rui1DUOaiHKENEgA",
+  "staticData": {},
   "tags": [
     {
       "createdAt": "2025-08-24T13:30:30.938Z",
@@ -590,5 +683,8 @@
       "id": "d0fdiQ6cgtkQS6lC",
       "name": "Analytics"
     }
-  ]
+  ],
+  "triggerCount": 2,
+  "updatedAt": "2025-08-25T00:00:00.000Z",
+  "versionId": "2.0.0"
 }

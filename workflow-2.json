@@ -1,6 +1,5 @@
 {
-  "name": "Social Post Monitor & Alert",
-  "active": true,
+  "name": "Social Post Monitor & Alert - Fixed",
   "nodes": [
     {
       "parameters": {
@@ -13,135 +12,251 @@
           ]
         }
       },
-      "id": "cron-trigger",
+      "id": "a02be910-3d42-492c-949c-80a7c233a55a",
       "name": "Trigger - Every 1 Hour",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
-      "position": [300, 300]
+      "position": [-592, 128]
     },
     {
       "parameters": {
-        "resource": "tweet",
         "operation": "search",
-        "query": "YourBrandName",
+        "searchText": "YourBrandName",
+        "returnAll": false,
         "limit": 5,
-        "options": {}
+        "additionalFields": {}
       },
-      "id": "twitter-search",
+      "id": "3fe02d01-2957-4d04-b6e7-4cdc8c7b1105",
       "name": "Fetch Twitter Mentions",
       "type": "n8n-nodes-base.twitter",
       "typeVersion": 2,
-      "position": [550, 300]
+      "position": [-352, 128],
+      "credentials": {
+        "twitterOAuth2Api": {
+          "id": "twitter-oauth2-credentials",
+          "name": "Twitter OAuth2 API"
+        }
+      }
     },
     {
       "parameters": {
-        "operation": "analyze",
-        "text": "={{ $json.text }}",
+        "batchSize": 1,
         "options": {}
       },
-      "id": "sentiment-analysis",
+      "id": "edfb19b9-7f97-4ec3-b8d3-ea96092dce65",
+      "name": "Split Tweets",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [-96, 128]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "model": "gpt-3.5-turbo",
+        "messages": {
+          "messageValues": [
+            {
+              "role": "user",
+              "content": "Analyze the sentiment of this text and return only 'positive', 'negative', or 'neutral' as a single word response: {{ $json.text }}"
+            }
+          ]
+        },
+        "requestOptions": {}
+      },
+      "id": "9e77d26b-4f41-4c33-8ced-a0a83aa3421a",
       "name": "Sentiment Analysis",
-      "type": "n8n-nodes-base.openai",
+      "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
-      "position": [800, 300]
+      "position": [160, 128],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
     },
     {
       "parameters": {
         "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
           "conditions": [
             {
               "id": "sentiment-check",
-              "leftValue": "={{ $json.sentiment }}",
+              "leftValue": "={{ $json.choices[0].message.content.trim().toLowerCase() }}",
               "rightValue": "negative",
               "operator": {
                 "type": "string",
-                "operation": "contains"
+                "operation": "equals"
               }
             }
-          ],
-          "combinator": "and"
+          ]
         },
         "options": {}
       },
-      "id": "if-negative",
+      "id": "e8941d21-c6a4-4337-832e-7392155ca76e",
       "name": "IF Negative Sentiment?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1050, 300]
+      "position": [416, 128]
     },
     {
       "parameters": {
+        "resource": "message",
+        "operation": "post",
         "channel": "#alerts",
-        "message": "⚠ Negative Tweet Found: {{$json.text}}",
-        "options": {}
+        "text": "⚠️ Negative Tweet Found!\n\n**Tweet:** {{ $('Split Tweets').item.json.text }}\n**Sentiment:** {{ $('Sentiment Analysis').item.json.choices[0].message.content }}\n**Author:** @{{ $('Split Tweets').item.json.user.screen_name }}\n**Time:** {{ $('Split Tweets').item.json.created_at }}",
+        "otherOptions": {}
       },
-      "id": "slack-alert",
+      "id": "900042e3-7b81-4c6e-a30e-96a84624e184",
       "name": "Send Slack Alert",
       "type": "n8n-nodes-base.slack",
-      "typeVersion": 1,
-      "position": [1300, 200]
+      "typeVersion": 2,
+      "position": [656, 32],
+      "credentials": {
+        "slackApi": {
+          "id": "slack-credentials",
+          "name": "Slack API"
+        }
+      }
     },
     {
       "parameters": {
-        "resource": "page",
+        "resource": "databasePage",
         "operation": "create",
-        "databaseId": "YOUR_NOTION_DB_ID",
-        "title": "={{ $json.text }}",
+        "databaseId": "YOUR_NOTION_DATABASE_ID",
+        "title": "Negative Tweet Alert - {{ new Date().toISOString().split('T')[0] }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Tweet Text",
+              "textValue": "={{ $('Split Tweets').item.json.text }}"
+            },
+            {
+              "key": "Sentiment",
+              "selectValue": "Negative"
+            },
+            {
+              "key": "Date",
+              "dateValue": "={{ $('Split Tweets').item.json.created_at }}"
+            },
+            {
+              "key": "Status",
+              "selectValue": "New"
+            },
+            {
+              "key": "Author",
+              "textValue": "={{ $('Split Tweets').item.json.user.screen_name }}"
+            }
+          ]
+        },
         "options": {}
       },
-      "id": "log-notion",
+      "id": "75537433-0e36-4d9e-abc1-0e654eea3793",
       "name": "Log to Notion",
       "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [656, 224],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-credentials",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "fc765ec3-2bb2-4405-95fa-392753bd947a",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
-      "position": [1300, 400]
+      "position": [912, 128]
     }
   ],
   "connections": {
-    "cron-trigger": {
+    "Trigger - Every 1 Hour": {
       "main": [
         [
           {
-            "node": "twitter-search",
+            "node": "Fetch Twitter Mentions",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "twitter-search": {
+    "Fetch Twitter Mentions": {
       "main": [
         [
           {
-            "node": "sentiment-analysis",
+            "node": "Split Tweets",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "sentiment-analysis": {
+    "Split Tweets": {
       "main": [
         [
           {
-            "node": "if-negative",
+            "node": "Sentiment Analysis",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "if-negative": {
+    "Sentiment Analysis": {
       "main": [
         [
           {
-            "node": "slack-alert",
+            "node": "IF Negative Sentiment?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Negative Sentiment?": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "log-notion",
+            "node": "Aggregate Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Slack Alert": {
+      "main": [
+        [
+          {
+            "node": "Log to Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Notion": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Results",
             "type": "main",
             "index": 0
           }
@@ -149,37 +264,30 @@
       ]
     }
   },
-  "pinData": {},
+  "active": false,
   "settings": {
-    "executionOrder": "v1",
-    "saveExecutionProgress": true,
-    "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner",
-    "errorWorkflow": ""
+    "executionOrder": "v1"
   },
-  "staticData": null,
+  "pinData": {},
+  "staticData": {},
   "tags": [
     {
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z",
-      "id": "social-monitoring",
+      "createdAt": "2025-08-25T04:01:57.020Z",
+      "updatedAt": "2025-08-25T04:01:57.020Z",
+      "id": "RGh3ImZY5nUbRHKp",
       "name": "Social Monitoring"
     },
     {
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z",
-      "id": "alerts",
+      "createdAt": "2025-08-25T04:01:56.684Z",
+      "updatedAt": "2025-08-25T04:01:56.684Z",
+      "id": "oG3xzMyT7Rro1D4g",
       "name": "Alerts"
     },
     {
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z",
-      "id": "automation",
+      "createdAt": "2025-08-24T14:36:43.687Z",
+      "updatedAt": "2025-08-24T14:36:43.687Z",
+      "id": "71DmM7lDRjEVjOKS",
       "name": "Automation"
     }
-  ],
-  "triggerCount": 1,
-  "updatedAt": "2024-01-01T00:00:00.000Z",
-  "versionId": "1.0.0"
+  ]
 }
-  
