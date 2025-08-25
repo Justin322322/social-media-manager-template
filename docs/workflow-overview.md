@@ -1,28 +1,40 @@
 # Workflow Overview
 
-How the Social Media Content Management Workflow operates and processes data.
+Comprehensive overview of all automation workflows in the n8n workspace.
 
-## Workflow Structure
+## Available Workflows
 
-The workflow consists of two main flows that run independently:
+The workspace contains three main automation workflows:
 
-1. **Content Publishing Flow** - Automatically publishes scheduled posts every 15 minutes
-2. **Weekly Analytics Flow** - Generates and sends comprehensive weekly reports every Monday at 9:00 AM
+### 1. Social Media Content Management
+**File**: `social-media-workflow.json`
+- **Content Publishing Flow** - Automatically publishes scheduled posts every hour
+- **Weekly Analytics Flow** - Generates comprehensive weekly reports every Monday
 
-## Main Content Publishing Flow
+### 2. Lead Capture & Enrichment
+**File**: `lead-capture-enrichment-workflow.json`
+- **Lead Processing Flow** - Automatically captures and enriches lead information from Google Forms
 
-### 1. Content Calendar Check (Cron Trigger)
-- **Frequency**: Every 15 minutes (`*/15`)
+### 3. Social Media Monitoring & Alerts
+**File**: `social-media-monitoring-alerts-workflow.json`
+- **Sentiment Analysis Flow** - Monitors social media mentions and alerts on negative sentiment
+
+## Social Media Content Management Workflow
+
+### Content Publishing Flow
+
+#### 1. Content Calendar Check (Cron Trigger)
+- **Frequency**: Every hour
 - **Purpose**: Triggers the workflow to check for scheduled content ready to publish
 - **Node Type**: Cron Trigger
-- **Position**: [300, 300]
+- **Position**: [-1392, -144]
 
-### 2. Read Google Sheets Calendar
+#### 2. Read Google Sheets Calendar
 - **Action**: Fetches all scheduled content from the "Content Calendar" sheet
-- **Range**: Columns A-E (ID, Date & Time, Post Text, Status, Facebook Post ID)
+- **Range**: Columns A-H (ID, Date & Time, Post Text, Status, Facebook Post ID, Media URL, Posted Date, Post URL)
 - **Options**: Unformatted values for accurate data processing
 - **Node Type**: Google Sheets (Read)
-- **Position**: [520, 300]
+- **Position**: [-1168, -144]
 
 ### 3. Filter Scheduled Posts
 - **Condition**: Status equals "Scheduled"
@@ -47,19 +59,25 @@ The workflow consists of two main flows that run independently:
 - **Node Type**: HTTP Request
 - **Position**: [1180, 300]
 
-### 6. Update Status to Posted
-- **Action**: Changes status from "Scheduled" to "Posted" in Google Sheets
-- **Target**: Status column (D) with dynamic row reference
-- **Purpose**: Tracks successful publications
+### 6. Update Status and Track Posting
+- **Action**: Updates multiple columns in Google Sheets
+- **Updates**:
+  - Status column (D): Changes from "Scheduled" to "Posted"
+  - Posted Date column (G): Records the publication timestamp
+- **Target**: Dynamic row reference based on post content
+- **Purpose**: Tracks successful publications with timestamps
 - **Node Type**: Google Sheets (Update)
-- **Position**: [1400, 300]
+- **Position**: [-272, -336]
 
-### 7. Store Facebook Post ID
-- **Action**: Captures and stores the Facebook post ID for tracking
-- **Target**: Facebook Post ID column (E) with dynamic row reference
-- **Purpose**: Enables post tracking, analytics, and future reference
+### 7. Store Facebook Post ID and URL
+- **Action**: Captures and stores Facebook post ID and generates post URL
+- **Updates**:
+  - Facebook Post ID column (E): Stores the post identifier
+  - Post URL column (H): Generates Facebook post URL for easy access
+- **Target**: Dynamic row reference based on post content
+- **Purpose**: Enables post tracking, analytics, and direct links
 - **Node Type**: Google Sheets (Update)
-- **Position**: [1620, 300]
+- **Position**: [-48, -336]
 
 ### 8. Success Logging
 - **Action**: Logs successful completion of content publishing workflow
@@ -69,12 +87,11 @@ The workflow consists of two main flows that run independently:
 
 ## Weekly Analytics Flow
 
-### 1. Weekly Analytics Trigger (Cron Trigger)
-- **Frequency**: Every Monday at 9:00 AM
-- **Cron Expression**: Week 1, Monday, 9:00 AM
+#### 1. Weekly Analytics Trigger (Cron Trigger)
+- **Frequency**: Every Monday
 - **Purpose**: Triggers comprehensive weekly report generation
 - **Node Type**: Cron Trigger
-- **Position**: [300, 800]
+- **Position**: [-1392, 272]
 
 ### 2. Get Facebook Page Insights
 - **Action**: Fetches comprehensive analytics data from Facebook
@@ -100,29 +117,30 @@ The workflow consists of two main flows that run independently:
 - **Node Type**: If (Conditional)
 - **Position**: [960, 800]
 
-### 5. Generate Weekly Report
-- **Action**: Creates comprehensive report header in Google Sheets
-- **Sheet**: "Weekly Report" tab
-- **Content**: Report title, generation date, performance metrics summary
-- **Structure**: Formatted table with metrics and headers
-- **Node Type**: Google Sheets (Create)
-- **Position**: [1180, 800]
+#### 5. Generate Analytics Report
+- **Action**: Processes Facebook insights and post data into structured format
+- **Data Processing**:
+  - Combines Facebook page metrics with weekly post data
+  - Calculates engagement metrics and follower changes
+  - Structures data for Google Sheets storage
+- **Node Type**: Code
+- **Position**: [-496, 176]
 
-### 6. Append Post Details
-- **Action**: Adds detailed post information to the report
-- **Data**: Date & Time, Post Text, Facebook Post ID
-- **Format**: Tabular data for easy reading and analysis
-- **Dynamic**: Maps all filtered posts to report rows
-- **Node Type**: Google Sheets (Append)
-- **Position**: [1400, 800]
+#### 6. Store Weekly Summary in Google Sheets
+- **Action**: Saves comprehensive weekly analytics to Google Sheets
+- **Sheet**: "Weekly Report" tab (gid=1)
+- **Data**: Week date range, total posts, impressions, engaged users, followers
+- **Format**: Structured data for analysis and reporting
+- **Node Type**: Google Sheets (Append or Update)
+- **Position**: [-272, 176]
 
-### 7. Send Email Report
-- **Action**: Emails beautifully formatted HTML report to manager
-- **Format**: Professional HTML with tables, styling, and metrics
-- **Content**: Performance metrics, post details, and visual elements
+#### 7. Send Email Notification
+- **Action**: Sends simple email notification about report generation
+- **Format**: Plain text with summary statistics
+- **Content**: Report availability confirmation and key metrics
 - **Recipient**: Configured manager email address
 - **Node Type**: Email Send
-- **Position**: [1620, 800]
+- **Position**: [-48, 176]
 
 ### 8. Analytics Completion Log
 - **Action**: Logs successful completion of weekly analytics workflow
@@ -200,6 +218,9 @@ Weekly Analytics (Google Sheets)
 | C | Post Text | Content to post | Plain text | Post content |
 | D | Status | Post status | Scheduled/Posted | Workflow control |
 | E | Facebook Post ID | Facebook's post identifier | Auto-populated | Tracking & analytics |
+| F | Media URL | Media attachment URL | URL | Optional media content |
+| G | Posted Date | Actual posting timestamp | ISO 8601 | Publication tracking |
+| H | Post URL | Facebook post URL | URL | Direct post access |
 
 ### Weekly Report Structure
 
@@ -223,9 +244,10 @@ The weekly report is automatically generated with:
 ## Timing and Scheduling
 
 ### Content Publishing
-- **Check Frequency**: Every 15 minutes
+- **Check Frequency**: Every hour
 - **Posting**: Immediate when scheduled time arrives
 - **Status Updates**: Real-time after successful posting
+- **Additional Tracking**: Posted date and direct post URL generation
 - **Error Handling**: Graceful failure with logging
 
 ### Weekly Reports
@@ -298,6 +320,105 @@ The weekly report is automatically generated with:
 - Add more metrics and visualizations
 - Include performance trends
 - Customize report recipients
+
+## Lead Capture & Enrichment Workflow
+
+### Overview
+Automatically processes new leads from Google Forms, enriches company email addresses with Clearbit data, and notifies the team via Slack.
+
+### Workflow Steps
+
+#### 1. Form Response Trigger
+- **Trigger**: Google Sheets row addition
+- **Purpose**: Detects new form submissions
+- **Node Type**: Google Sheets Trigger
+- **Position**: [300, 300]
+
+#### 2. Company Email Check
+- **Condition**: Email contains "@company.com"
+- **Purpose**: Determines enrichment path
+- **Node Type**: If (Conditional)
+- **Position**: [600, 300]
+
+#### 3. Clearbit Enrichment (Company Emails)
+- **Action**: Fetches company and person data from Clearbit
+- **Data**: Name, company, title, location
+- **Purpose**: Enriches lead information
+- **Node Type**: Clearbit
+- **Position**: [900, 200]
+
+#### 4. Save Enriched Lead
+- **Action**: Stores enriched lead data in Google Sheets
+- **Fields**: Name, Email, Company, Title, Location, Enriched status
+- **Node Type**: Google Sheets (Append or Update)
+- **Position**: [1200, 200]
+
+#### 5. Save Basic Lead (Personal Emails)
+- **Action**: Stores basic lead data without enrichment
+- **Fields**: Name, Email, Company, basic tracking
+- **Node Type**: Google Sheets (Append or Update)
+- **Position**: [1200, 400]
+
+#### 6. Slack Notification
+- **Action**: Sends formatted notification to team
+- **Content**: Lead details and enrichment status
+- **Node Type**: Slack
+- **Position**: [1500, 300]
+
+## Social Media Monitoring & Alerts Workflow
+
+### Overview
+Monitors social media mentions, analyzes sentiment using OpenAI, and alerts the team about negative mentions via Slack and Notion.
+
+### Workflow Steps
+
+#### 1. Hourly Trigger
+- **Frequency**: Every hour
+- **Purpose**: Regular monitoring cycle
+- **Node Type**: Cron Trigger
+- **Position**: [-592, 128]
+
+#### 2. Fetch Twitter Mentions
+- **Action**: Searches for brand mentions on Twitter
+- **Limit**: 5 most recent mentions
+- **Node Type**: Twitter
+- **Position**: [-352, 128]
+
+#### 3. Process Individual Tweets
+- **Action**: Splits tweet results for individual processing
+- **Purpose**: Enables per-tweet sentiment analysis
+- **Node Type**: Split In Batches
+- **Position**: [-96, 128]
+
+#### 4. Sentiment Analysis
+- **Action**: Analyzes tweet sentiment using OpenAI GPT-3.5
+- **Classification**: Positive, negative, or neutral
+- **Node Type**: OpenAI
+- **Position**: [160, 128]
+
+#### 5. Negative Sentiment Check
+- **Condition**: Sentiment equals "negative"
+- **Purpose**: Identifies tweets requiring attention
+- **Node Type**: If (Conditional)
+- **Position**: [416, 128]
+
+#### 6. Slack Alert
+- **Action**: Sends immediate alert to team
+- **Content**: Tweet text, sentiment, author, timestamp
+- **Node Type**: Slack
+- **Position**: [656, 32]
+
+#### 7. Log to Notion
+- **Action**: Creates tracking entry in Notion database
+- **Fields**: Tweet text, sentiment, date, author, status
+- **Node Type**: Notion
+- **Position**: [656, 224]
+
+#### 8. Aggregate Results
+- **Action**: Combines all processed results
+- **Purpose**: Provides summary of monitoring cycle
+- **Node Type**: Aggregate
+- **Position**: [912, 128]
 
 ## Next Steps
 

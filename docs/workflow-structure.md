@@ -4,10 +4,17 @@ Detailed breakdown of the Social Media Content Management Workflow nodes, connec
 
 ## Workflow Overview
 
-The workflow consists of **24 nodes** organized into two main flows:
+The workspace contains **three main workflows** with a total of **40+ nodes**:
+
+### Social Media Content Management (`social-media-workflow.json`)
 - **Content Publishing Flow**: 8 nodes for automated content publishing
 - **Weekly Analytics Flow**: 8 nodes for comprehensive reporting
-- **Documentation**: 8 sticky notes with setup and maintenance information
+
+### Lead Capture & Enrichment (`lead-capture-enrichment-workflow.json`)
+- **Lead Processing Flow**: 6 nodes for automated lead processing
+
+### Social Media Monitoring & Alerts (`social-media-monitoring-alerts-workflow.json`)
+- **Sentiment Analysis Flow**: 8 nodes for social media monitoring
 
 ## Node Details
 
@@ -15,37 +22,38 @@ The workflow consists of **24 nodes** organized into two main flows:
 
 #### 1. TRIGGER - Content Calendar Check
 - **Type**: `n8n-nodes-base.cron`
-- **Position**: [300, 300]
+- **Position**: [-1392, -144]
 - **Configuration**:
   ```json
   {
     "rule": {
-      "interval": [{ "field": "minute", "expression": "*/15" }]
+      "interval": [{ "field": "hour", "expression": "1" }]
     }
   }
   ```
-- **Purpose**: Triggers workflow every 15 minutes to check for scheduled content
-- **Notes**: Runs continuously to ensure timely content publishing
+- **Purpose**: Triggers workflow every hour to check for scheduled content
+- **Notes**: Hourly checks balance timeliness with API rate limits
 
 #### 2. READ - Google Sheets Calendar
 - **Type**: `n8n-nodes-base.googleSheets`
-- **Position**: [520, 300]
+- **Position**: [-1168, -144]
 - **Configuration**:
   ```json
   {
+    "resource": "sheet",
     "operation": "read",
-    "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
-    "sheetName": "Content Calendar",
-    "range": "A:E",
+    "documentId": "YOUR_GOOGLE_SHEETS_DOCUMENT_ID",
+    "sheetName": "gid=0",
+    "range": "A:H",
     "options": { "valueRenderMode": "UNFORMATTED_VALUE" }
   }
   ```
 - **Purpose**: Fetches all scheduled content from the Content Calendar sheet
-- **Data Range**: Columns A-E (ID, Date & Time, Post Text, Status, Facebook Post ID)
+- **Data Range**: Columns A-H (ID, Date & Time, Post Text, Status, Facebook Post ID, Media URL, Posted Date, Post URL)
 
 #### 3. FILTER - Scheduled Posts
 - **Type**: `n8n-nodes-base.if`
-- **Position**: [740, 300]
+- **Position**: [-944, -144]
 - **Configuration**:
   ```json
   {
@@ -67,7 +75,7 @@ The workflow consists of **24 nodes** organized into two main flows:
 
 #### 4. CHECK - Publishing Time
 - **Type**: `n8n-nodes-base.if`
-- **Position**: [960, 300]
+- **Position**: [-720, -240]
 - **Configuration**:
   ```json
   {
@@ -89,18 +97,14 @@ The workflow consists of **24 nodes** organized into two main flows:
 
 #### 5. PUBLISH - Facebook Post
 - **Type**: `n8n-nodes-base.httpRequest`
-- **Position**: [1180, 300]
+- **Position**: [-496, -336]
 - **Configuration**:
   ```json
   {
-    "url": "https://graph.facebook.com/v18.0/{{ $env.FACEBOOK_PAGE_ID }}/feed",
     "method": "POST",
-    "authentication": "genericCredentialType",
-    "genericAuthType": "httpHeaderAuth",
-    "sendHeaders": true,
-    "headerParameters": {
-      "parameters": [{ "name": "Authorization", "value": "Bearer {{ $env.FACEBOOK_ACCESS_TOKEN }}" }]
-    },
+    "url": "https://graph.facebook.com/v18.0/YOUR_FACEBOOK_PAGE_ID/feed",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "facebookGraphApi",
     "sendBody": true,
     "bodyParameters": {
       "parameters": [
@@ -113,43 +117,61 @@ The workflow consists of **24 nodes** organized into two main flows:
   ```
 - **Purpose**: Posts content to Facebook using Graph API v18.0
 - **Features**: Supports media URLs and automatic publishing
-- **Authentication**: Bearer token via HTTP header
+- **Authentication**: Facebook Graph API credential
 
 #### 6. UPDATE - Mark as Posted
 - **Type**: `n8n-nodes-base.googleSheets`
-- **Position**: [1400, 300]
+- **Position**: [-272, -336]
 - **Configuration**:
   ```json
   {
+    "resource": "sheet",
     "operation": "update",
-    "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
-    "sheetName": "Content Calendar",
-    "range": "D{{ $json.rowIndex || $json.ID }}",
-    "values": [["Posted"]]
+    "documentId": "YOUR_GOOGLE_SHEETS_DOCUMENT_ID",
+    "sheetName": "gid=0",
+    "columns": {
+      "mappingMode": "defineBelow",
+      "value": {
+        "Status": "Posted",
+        "Posted Date": "={{ new Date().toISOString() }}"
+      }
+    },
+    "options": {
+      "whereClause": "={{ 'Post Text=\"' + $json['Post Text'] + '\"' }}"
+    }
   }
   ```
-- **Purpose**: Updates post status from "Scheduled" to "Posted"
-- **Target**: Status column (D) with dynamic row reference
+- **Purpose**: Updates post status and tracks posting date
+- **Target**: Status column (D) and Posted Date column (G)
 
-#### 7. STORE - Facebook Post ID
+#### 7. STORE - Facebook Post ID and URL
 - **Type**: `n8n-nodes-base.googleSheets`
-- **Position**: [1620, 300]
+- **Position**: [-48, -336]
 - **Configuration**:
   ```json
   {
+    "resource": "sheet",
     "operation": "update",
-    "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
-    "sheetName": "Content Calendar",
-    "range": "E{{ $json.rowIndex || $json.ID }}",
-    "values": [["={{ $('PUBLISH - Facebook Post').first()?.json?.id || '' }}"]]
+    "documentId": "YOUR_GOOGLE_SHEETS_DOCUMENT_ID",
+    "sheetName": "gid=0",
+    "columns": {
+      "mappingMode": "defineBelow",
+      "value": {
+        "Facebook Post ID": "={{ $('PUBLISH - Facebook Post').item.json.id }}",
+        "Post URL": "={{ 'https://facebook.com/' + $('PUBLISH - Facebook Post').item.json.id }}"
+      }
+    },
+    "options": {
+      "whereClause": "={{ 'Post Text=\"' + $('CHECK - Publishing Time').item.json['Post Text'] + '\"' }}"
+    }
   }
   ```
-- **Purpose**: Stores the Facebook post ID for tracking and analytics
-- **Target**: Facebook Post ID column (E) with dynamic row reference
+- **Purpose**: Stores Facebook post ID and generates direct post URL
+- **Target**: Facebook Post ID column (E) and Post URL column (H)
 
 #### 8. SUCCESS - Content Published
 - **Type**: `n8n-nodes-base.code`
-- **Position**: [1840, 300]
+- **Position**: [176, -336]
 - **Configuration**:
   ```json
   {
@@ -163,44 +185,37 @@ The workflow consists of **24 nodes** organized into two main flows:
 
 #### 1. TRIGGER - Weekly Analytics
 - **Type**: `n8n-nodes-base.cron`
-- **Position**: [300, 800]
+- **Position**: [-1392, 272]
 - **Configuration**:
   ```json
   {
     "rule": {
       "interval": [
-        { "field": "week", "expression": "1" },
-        { "field": "weekday", "expression": "1" },
-        { "field": "hour", "expression": "9" },
-        { "field": "minute", "expression": "0" }
+        { "field": "weekDay", "expression": "1" }
       ]
     }
   }
   ```
-- **Purpose**: Triggers weekly report generation every Monday at 9:00 AM
+- **Purpose**: Triggers weekly report generation every Monday
 - **Frequency**: Weekly on Mondays
 
 #### 2. ANALYTICS - Facebook Insights
 - **Type**: `n8n-nodes-base.httpRequest`
-- **Position**: [520, 800]
+- **Position**: [-1168, 272]
 - **Configuration**:
   ```json
   {
-    "url": "https://graph.facebook.com/v18.0/{{ $env.FACEBOOK_PAGE_ID }}/insights",
     "method": "GET",
-    "authentication": "genericCredentialType",
-    "genericAuthType": "httpHeaderAuth",
-    "sendHeaders": true,
-    "headerParameters": {
-      "parameters": [{ "name": "Authorization", "value": "Bearer {{ $env.FACEBOOK_ACCESS_TOKEN }}" }]
-    },
+    "url": "https://graph.facebook.com/v18.0/YOUR_FACEBOOK_PAGE_ID/insights",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "facebookGraphApi",
     "sendQuery": true,
     "queryParameters": {
       "parameters": [
         { "name": "metric", "value": "page_impressions,page_engaged_users,page_fan_adds,page_fan_removes" },
         { "name": "period", "value": "week" },
-        { "name": "since", "value": "={{ new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() }}" },
-        { "name": "until", "value": "={{ new Date().toISOString() }}" }
+        { "name": "since", "value": "={{ new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] }}" },
+        { "name": "until", "value": "={{ new Date().toISOString().split('T')[0] }}" }
       ]
     }
   }
@@ -254,66 +269,60 @@ The workflow consists of **24 nodes** organized into two main flows:
 - **Logic**: Ensures accurate weekly reporting data
 
 #### 5. REPORT - Generate Analytics
-- **Type**: `n8n-nodes-base.googleSheets`
-- **Position**: [1180, 800]
+- **Type**: `n8n-nodes-base.code`
+- **Position**: [-496, 176]
 - **Configuration**:
   ```json
   {
-    "operation": "create",
-    "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
-    "sheetName": "Weekly Report",
-    "range": "A1",
-    "values": [
-      ["Weekly Social Media Report", "Generated: {{ new Date().toLocaleDateString() }}"],
-      [""],
-      [
-        "Page Performance:",
-        "Impressions: {{ $('ANALYTICS - Facebook Insights').first()?.json?.data?.[0]?.values?.[0]?.value || 0 }}",
-        "Engaged Users: {{ $('ANALYTICS - Facebook Insights').first()?.json?.data?.[1]?.values?.[0]?.value || 0 }}",
-        "New Followers: {{ $('ANALYTICS - Facebook Insights').first()?.json?.data?.[2]?.values?.[0]?.value || 0 }}",
-        "Lost Followers: {{ $('ANALYTICS - Facebook Insights').first()?.json?.data?.[3]?.values?.[0]?.value || 0 }}"
-      ],
-      [""],
-      ["Posts Published This Week:", "{{ $('FILTER - Last 7 Days Posts').length || 0 }}"],
-      [""],
-      ["Post Details:"]
-    ]
+    "jsCode": "// Combine Facebook Analytics with Post Data\nconst analytics = $('ANALYTICS - Facebook Insights').item.json.data;\nconst posts = $input.all();\n\n// Calculate summary metrics\nconst summary = {\n  totalPosts: posts.length,\n  weekStartDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),\n  weekEndDate: new Date().toLocaleDateString(),\n  impressions: 0,\n  engagedUsers: 0,\n  newFollowers: 0,\n  unfollowers: 0\n};\n\n// Process analytics data\nif (analytics && Array.isArray(analytics)) {\n  analytics.forEach(metric => {\n    if (metric.name === 'page_impressions' && metric.values?.[0]?.value) {\n      summary.impressions = metric.values[0].value;\n    }\n    // ... [additional metric processing]\n  });\n}\n\n// Return combined data\nreturn {\n  summary,\n  posts: posts.map(post => ({\n    postText: post.json['Post Text'] || 'N/A',\n    dateTime: post.json['Date & Time'] || 'N/A',\n    status: post.json['Status'] || 'N/A',\n    postId: post.json['Facebook Post ID'] || 'N/A'\n  })),\n  generatedAt: new Date().toISOString()\n};"
   }
   ```
-- **Purpose**: Creates comprehensive weekly report header with performance metrics
-- **Content**: Report title, generation date, and key performance indicators
+- **Purpose**: Processes Facebook insights and post data into structured format
+- **Data Processing**: Combines analytics with post history for comprehensive reporting
 
-#### 6. APPEND - Post Details
+#### 6. STORE - Weekly Summary
 - **Type**: `n8n-nodes-base.googleSheets`
-- **Position**: [1400, 800]
+- **Position**: [-272, 176]
 - **Configuration**:
   ```json
   {
-    "operation": "append",
-    "documentId": "={{ $env.GOOGLE_SHEETS_DOCUMENT_ID }}",
-    "sheetName": "Weekly Report",
-    "range": "A10",
-    "values": "={{ $('FILTER - Last 7 Days Posts').map(item => [item['Date & Time'] || '', item['Post Text'] || '', item['Facebook Post ID'] || '']) }}"
+    "resource": "sheet",
+    "operation": "appendOrUpdate",
+    "documentId": "YOUR_GOOGLE_SHEETS_DOCUMENT_ID",
+    "sheetName": "gid=1",
+    "columns": {
+      "mappingMode": "defineBelow",
+      "value": {
+        "Week Start": "={{ $json.summary.weekStartDate }}",
+        "Week End": "={{ $json.summary.weekEndDate }}",
+        "Total Posts": "={{ $json.summary.totalPosts }}",
+        "Impressions": "={{ $json.summary.impressions }}",
+        "Engaged Users": "={{ $json.summary.engagedUsers }}",
+        "New Followers": "={{ $json.summary.newFollowers }}",
+        "Unfollowers": "={{ $json.summary.unfollowers }}",
+        "Generated At": "={{ $json.generatedAt }}"
+      }
+    }
   }
   ```
-- **Purpose**: Adds detailed post information to the weekly report
-- **Data**: Date, post text, and Facebook post IDs for all weekly posts
+- **Purpose**: Saves comprehensive weekly analytics to Google Sheets
+- **Data**: Week date range, total posts, impressions, engaged users, followers
 
 #### 7. EMAIL - Send Report to Manager
 - **Type**: `n8n-nodes-base.emailSend`
-- **Position**: [1620, 800]
+- **Position**: [-48, 176]
 - **Configuration**:
   ```json
   {
-    "toEmail": "={{ $env.MANAGER_EMAIL }}",
-    "subject": "Weekly Social Media Report - {{ new Date().toLocaleDateString() }}",
-    "emailType": "html",
-    "message": "=<!DOCTYPE html><html><body style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'><div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 20px;'><h1 style='margin: 0; font-size: 28px;'>Weekly Social Media Report</h1><p style='margin: 10px 0 0; opacity: 0.9;'>Generated: {{ new Date().toLocaleDateString() }}</p></div><div style='background: #f8fafc; padding: 25px; border-radius: 10px; margin-bottom: 20px;'><h2 style='color: #2d3748; margin-top: 0;'>Page Performance</h2><div style='display: grid; grid-template-columns: 1fr 1fr; gap: 15px;'><div style='background: white; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 24px; font-weight: bold; color: #3182ce;'>{{ $('ANALYTICS - Facebook Insights').first()?.json?.data?.[0]?.values?.[0]?.value || 0 }}</div><div style='color: #718096; font-size: 14px;'>Impressions</div></div><div style='background: white; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 24px; font-weight: bold; color: #38a169;'>{{ $('ANALYTICS - Facebook Insights').first()?.json?.data?.[1]?.values?.[0]?.value || 0 }}</div><div style='color: #718096; font-size: 14px;'>Engaged Users</div></div><div style='background: white; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 24px; font-weight: bold; color: #00a86b;'>{{ $('ANALYTICS - Facebook Insights').first()?.json?.data?.[2]?.values?.[0]?.value || 0 }}</div><div style='color: #718096; font-size: 14px;'>New Followers</div></div><div style='background: white; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 24px; font-weight: bold; color: #e53e3e;'>{{ $('ANALYTICS - Facebook Insights').first()?.json?.data?.[3]?.values?.[0]?.value || 0 }}</div><div style='color: #718096; font-size: 14px;'>Lost Followers</div></div></div></div><div style='background: white; padding: 25px; border-radius: 10px; border: 1px solid #e2e8f0;'><h2 style='color: #2d3748; margin-top: 0;'>Posts Published This Week</h2><p style='font-size: 18px; color: #4a5568; margin-bottom: 20px;'><strong>Total Posts:</strong> {{ $('FILTER - Last 7 Days Posts').length || 0 }}</p><table style='width: 100%; border-collapse: collapse; margin-top: 15px;'><thead><tr style='background: #f7fafc;'><th style='border: 1px solid #e2e8f0; padding: 12px; text-align: left; color: #2d3748;'>Date & Time</th><th style='border: 1px solid #e2e8f0; padding: 12px; text-align: left; color: #2d3748;'>Post Text</th><th style='border: 1px solid #e2e8f0; padding: 12px; text-align: left; color: #2d3748;'>Facebook ID</th></tr></thead><tbody>{{ $('FILTER - Last 7 Days Posts').map(item => '<tr><td style=\"border: 1px solid #e2e8f0; padding: 10px;\">' + (item['Date & Time'] || '') + '</td><td style=\"border: 1px solid #e2e8f0; padding: 10px;\">' + (item['Post Text'] || '').substring(0, 50) + (item['Post Text'] && item['Post Text'].length > 50 ? '...' : '') + '</td><td style=\"border: 1px solid #e2e8f0; padding: 10px; font-family: monospace; font-size: 12px;\">' + (item['Facebook Post ID'] || '') + '</td></tr>').join('') }}</tbody></table></div><div style='text-align: center; margin-top: 30px; padding: 20px; background: #f7fafc; border-radius: 10px; color: #718096; font-size: 14px;'>This report was generated automatically by your Social Media Workflow<br>Questions? Contact your system administrator.</div></body></html>"
+    "fromEmail": "noreply@yourcompany.com",
+    "toEmail": "manager@yourcompany.com",
+    "subject": "Weekly Social Media Report - {{ $json.summary.weekStartDate }} to {{ $json.summary.weekEndDate }}",
+    "message": "Weekly Social Media Performance Report\\n\\n📊 SUMMARY:\\n• Total Posts: {{ $json.summary.totalPosts }}\\n• Page Impressions: {{ $json.summary.impressions }}\\n• Engaged Users: {{ $json.summary.engagedUsers }}\\n• New Followers: {{ $json.summary.newFollowers }}\\n• Unfollowers: {{ $json.summary.unfollowers }}\\n\\n📝 POSTS THIS WEEK:\\n{% for post in $json.posts %}\\n• {{ post.postText }} ({{ post.dateTime }})\\n{% endfor %}\\n\\nReport generated: {{ $json.generatedAt }}"
   }
   ```
-- **Purpose**: Sends beautifully formatted HTML email report to manager
-- **Features**: Professional styling, performance metrics, and post details
-- **Format**: Responsive HTML with tables and visual elements
+- **Purpose**: Sends simple email notification about report generation
+- **Features**: Summary statistics and key metrics
+- **Format**: Plain text with performance data
 
 #### 8. SUCCESS - Analytics Complete
 - **Type**: `n8n-nodes-base.code`
@@ -440,3 +449,267 @@ TRIGGER - Weekly Analytics
 - Check [Configuration](configuration.md) for detailed setup options
 - Set up your [Google Sheets Template](google-sheets-template.md)
 - Learn about [Customization](customization.md) options
+
+## Lead Capture & Enrichment Workflow (`workflow-1.json`)
+
+### Node Details
+
+#### 1. TRIGGER - New Form Response
+- **Type**: `n8n-nodes-base.googleSheetsTrigger`
+- **Position**: [300, 300]
+- **Configuration**:
+  ```json
+  {
+    "event": "rowAdded",
+    "documentId": "YOUR_SHEET_ID",
+    "sheetName": "gid=0",
+    "scope": "thisDocument"
+  }
+  ```
+- **Purpose**: Detects new form submissions in Google Sheets
+- **Trigger**: Automatic when new row is added
+
+#### 2. IF Company Email?
+- **Type**: `n8n-nodes-base.if`
+- **Position**: [600, 300]
+- **Configuration**:
+  ```json
+  {
+    "conditions": {
+      "conditions": [
+        {
+          "leftValue": "={{ $json.email }}",
+          "rightValue": "@company.com",
+          "operator": { "type": "string", "operation": "contains" }
+        }
+      ]
+    }
+  }
+  ```
+- **Purpose**: Determines enrichment path based on email domain
+
+#### 3. ENRICH via Clearbit
+- **Type**: `n8n-nodes-base.clearbit`
+- **Position**: [900, 200]
+- **Configuration**:
+  ```json
+  {
+    "resource": "person",
+    "operation": "enrich",
+    "email": "={{ $json.email }}"
+  }
+  ```
+- **Purpose**: Fetches company and person data from Clearbit API
+
+#### 4. SAVE Enriched Lead
+- **Type**: `n8n-nodes-base.googleSheets`
+- **Position**: [1200, 200]
+- **Configuration**:
+  ```json
+  {
+    "resource": "sheet",
+    "operation": "appendOrUpdate",
+    "documentId": "YOUR_LEADS_SHEET_ID",
+    "sheetName": "gid=0",
+    "columns": {
+      "mappingMode": "defineBelow",
+      "value": {
+        "Name": "={{ $('Trigger - New Form Response').item.json.name || $json.person?.name?.fullName || 'Unknown' }}",
+        "Email": "={{ $('Trigger - New Form Response').item.json.email }}",
+        "Company": "={{ $json.person?.employment?.name || $('Trigger - New Form Response').item.json.company || 'N/A' }}",
+        "Title": "={{ $json.person?.employment?.title || 'N/A' }}",
+        "Location": "={{ $json.person?.location || 'N/A' }}",
+        "Enriched": "Yes",
+        "Date Added": "={{ new Date().toISOString().split('T')[0] }}"
+      }
+    }
+  }
+  ```
+- **Purpose**: Stores enriched lead data with additional company information
+
+#### 5. SAVE Basic Lead
+- **Type**: `n8n-nodes-base.googleSheets`
+- **Position**: [1200, 400]
+- **Configuration**:
+  ```json
+  {
+    "resource": "sheet",
+    "operation": "appendOrUpdate",
+    "documentId": "YOUR_LEADS_SHEET_ID",
+    "sheetName": "gid=0",
+    "columns": {
+      "mappingMode": "defineBelow",
+      "value": {
+        "Name": "={{ $json.name || 'Unknown' }}",
+        "Email": "={{ $json.email }}",
+        "Company": "={{ $json.company || 'Personal Email' }}",
+        "Title": "N/A",
+        "Location": "N/A",
+        "Enriched": "No",
+        "Date Added": "={{ new Date().toISOString().split('T')[0] }}"
+      }
+    }
+  }
+  ```
+- **Purpose**: Stores basic lead data without enrichment
+
+#### 6. NOTIFY Team via Slack
+- **Type**: `n8n-nodes-base.slack`
+- **Position**: [1500, 300]
+- **Configuration**:
+  ```json
+  {
+    "resource": "message",
+    "operation": "post",
+    "channel": "#leads",
+    "text": "🎯 New Lead Captured!\n\n**Name:** {{ $('Trigger - New Form Response').item.json.name || 'Unknown' }}\n**Email:** {{ $('Trigger - New Form Response').item.json.email }}\n**Company:** {{ $json.person?.employment?.name || $('Trigger - New Form Response').item.json.company || 'Personal' }}\n**Title:** {{ $json.person?.employment?.title || 'N/A' }}\n**Enriched:** {{ $json.person ? '✅ Yes' : '❌ No' }}"
+  }
+  ```
+- **Purpose**: Sends formatted notification to team channel
+
+## Social Media Monitoring & Alerts Workflow (`workflow-2.json`)
+
+### Node Details
+
+#### 1. TRIGGER - Every 1 Hour
+- **Type**: `n8n-nodes-base.cron`
+- **Position**: [-592, 128]
+- **Configuration**:
+  ```json
+  {
+    "rule": {
+      "interval": [{ "field": "hour", "expression": "1" }]
+    }
+  }
+  ```
+- **Purpose**: Triggers hourly social media monitoring cycle
+
+#### 2. FETCH Twitter Mentions
+- **Type**: `n8n-nodes-base.twitter`
+- **Position**: [-352, 128]
+- **Configuration**:
+  ```json
+  {
+    "operation": "search",
+    "searchText": "YourBrandName",
+    "returnAll": false,
+    "limit": 5
+  }
+  ```
+- **Purpose**: Searches for recent brand mentions on Twitter
+
+#### 3. SPLIT Tweets
+- **Type**: `n8n-nodes-base.splitInBatches`
+- **Position**: [-96, 128]
+- **Configuration**:
+  ```json
+  {
+    "batchSize": 1,
+    "options": {}
+  }
+  ```
+- **Purpose**: Processes individual tweets for sentiment analysis
+
+#### 4. SENTIMENT Analysis
+- **Type**: `n8n-nodes-base.openAi`
+- **Position**: [160, 128]
+- **Configuration**:
+  ```json
+  {
+    "resource": "text",
+    "operation": "message",
+    "model": "gpt-3.5-turbo",
+    "messages": {
+      "messageValues": [
+        {
+          "role": "user",
+          "content": "Analyze the sentiment of this text and return only 'positive', 'negative', or 'neutral' as a single word response: {{ $json.text }}"
+        }
+      ]
+    }
+  }
+  ```
+- **Purpose**: Analyzes tweet sentiment using OpenAI GPT-3.5
+
+#### 5. IF Negative Sentiment?
+- **Type**: `n8n-nodes-base.if`
+- **Position**: [416, 128]
+- **Configuration**:
+  ```json
+  {
+    "conditions": {
+      "conditions": [
+        {
+          "leftValue": "={{ $json.choices[0].message.content.trim().toLowerCase() }}",
+          "rightValue": "negative",
+          "operator": { "type": "string", "operation": "equals" }
+        }
+      ]
+    }
+  }
+  ```
+- **Purpose**: Identifies tweets requiring immediate attention
+
+#### 6. SEND Slack Alert
+- **Type**: `n8n-nodes-base.slack`
+- **Position**: [656, 32]
+- **Configuration**:
+  ```json
+  {
+    "resource": "message",
+    "operation": "post",
+    "channel": "#alerts",
+    "text": "⚠️ Negative Tweet Found!\n\n**Tweet:** {{ $('Split Tweets').item.json.text }}\n**Sentiment:** {{ $('Sentiment Analysis').item.json.choices[0].message.content }}\n**Author:** @{{ $('Split Tweets').item.json.user.screen_name }}\n**Time:** {{ $('Split Tweets').item.json.created_at }}"
+  }
+  ```
+- **Purpose**: Sends immediate alert about negative sentiment
+
+#### 7. LOG to Notion
+- **Type**: `n8n-nodes-base.notion`
+- **Position**: [656, 224]
+- **Configuration**:
+  ```json
+  {
+    "resource": "databasePage",
+    "operation": "create",
+    "databaseId": "YOUR_NOTION_DATABASE_ID",
+    "title": "Negative Tweet Alert - {{ new Date().toISOString().split('T')[0] }}",
+    "propertiesUi": {
+      "propertyValues": [
+        {
+          "key": "Tweet Text",
+          "textValue": "={{ $('Split Tweets').item.json.text }}"
+        },
+        {
+          "key": "Sentiment",
+          "selectValue": "Negative"
+        },
+        {
+          "key": "Date",
+          "dateValue": "={{ $('Split Tweets').item.json.created_at }}"
+        },
+        {
+          "key": "Status",
+          "selectValue": "New"
+        },
+        {
+          "key": "Author",
+          "textValue": "={{ $('Split Tweets').item.json.user.screen_name }}"
+        }
+      ]
+    }
+  }
+  ```
+- **Purpose**: Creates tracking entry in Notion database
+
+#### 8. AGGREGATE Results
+- **Type**: `n8n-nodes-base.aggregate`
+- **Position**: [912, 128]
+- **Configuration**:
+  ```json
+  {
+    "aggregate": "aggregateAllItemData",
+    "options": {}
+  }
+  ```
+- **Purpose**: Combines all processed results for summary

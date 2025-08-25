@@ -1,6 +1,14 @@
-# Social Media Content Management Workflow
+# n8n Workflow Collection
 
-A comprehensive n8n workflow for automated social media content publishing and analytics reporting.
+A comprehensive collection of n8n workflows for automated business processes including social media management, lead capture, and monitoring.
+
+## Available Workflows
+
+| Workflow Name | Description | File |
+|---------------|-------------|------|
+| Social Media Content Management | Automated content publishing and analytics reporting | `social-media-workflow.json` |
+| Lead Capture & Enrichment | Automated lead processing with Clearbit enrichment | `lead-capture-enrichment-workflow.json` |
+| Social Media Monitoring & Alerts | AI-powered sentiment analysis and alerts | `social-media-monitoring-alerts-workflow.json` |
 
 <img width="1730" height="550" alt="image" src="https://github.com/user-attachments/assets/339e2311-2017-47be-a473-8aa226743f95" />
 
