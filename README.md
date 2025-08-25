@@ -10,7 +10,17 @@ A comprehensive collection of n8n workflows for automated business processes inc
 | Lead Capture & Enrichment | Automated lead processing with Clearbit enrichment | `lead-capture-enrichment-workflow.json` |
 | Social Media Monitoring & Alerts | AI-powered sentiment analysis and alerts | `social-media-monitoring-alerts-workflow.json` |
 
-<img width="1730" height="550" alt="image" src="https://github.com/user-attachments/assets/339e2311-2017-47be-a473-8aa226743f95" />
+## Social Media Content Management
+<img width="1280" height="623" alt="image" src="https://github.com/user-attachments/assets/9eea65fc-176b-487a-a02a-f7ba8578bca8" />
+
+## Lead Capture & Enrichment
+<img width="1524" height="450" alt="image" src="https://github.com/user-attachments/assets/37092dd4-bc9a-45d6-adb6-ba2091df4c75" />
+
+## Social Media Monitoring & Alerts
+<img width="1573" height="414" alt="image" src="https://github.com/user-attachments/assets/3cb7c3aa-e48d-4b85-bf88-0b5d147bb974" />
+
+
+
 
 
 ## Overview
