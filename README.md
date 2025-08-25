@@ -6,9 +6,9 @@ A comprehensive collection of n8n workflows for automated business processes inc
 
 | Workflow Name | Description | File | Documentation |
 |---------------|-------------|------|---------------|
-| Social Media Content Management | Automated content publishing and analytics reporting | [`social-media-workflow.json`](#social-media-content-management) | [Overview](docs/workflow-overview.md#social-media-content-management-workflow) • [🔧 Structure](docs/workflow-structure.md#node-details) |
-| Lead Capture & Enrichment | Automated lead processing with Clearbit enrichment | [`lead-capture-enrichment-workflow.json`](#lead-capture--enrichment) | [Overview](docs/workflow-overview.md#lead-capture--enrichment-workflow) • [🔧 Structure](docs/workflow-structure.md#lead-capture--enrichment-workflow) |
-| Social Media Monitoring & Alerts | AI-powered sentiment analysis and alerts | [`social-media-monitoring-alerts-workflow.json`](#social-media-monitoring--alerts) | [Overview](docs/workflow-overview.md#social-media-monitoring--alerts-workflow) • [🔧 Structure](docs/workflow-structure.md#social-media-monitoring--alerts-workflow) |
+| Social Media Content Management | Automated content publishing and analytics reporting | [`social-media-workflow.json`](#social-media-content-management) | [Overview](docs/workflow-overview.md#social-media-content-management-workflow) • [Structure](docs/workflow-structure.md#node-details) |
+| Lead Capture & Enrichment | Automated lead processing with Clearbit enrichment | [`lead-capture-enrichment-workflow.json`](#lead-capture--enrichment) | [Overview](docs/workflow-overview.md#lead-capture--enrichment-workflow) • [Structure](docs/workflow-structure.md#lead-capture--enrichment-workflow) |
+| Social Media Monitoring & Alerts | AI-powered sentiment analysis and alerts | [`social-media-monitoring-alerts-workflow.json`](#social-media-monitoring--alerts) | [Overview](docs/workflow-overview.md#social-media-monitoring--alerts-workflow) • [Structure](docs/workflow-structure.md#social-media-monitoring--alerts-workflow) |
 
 ## Social Media Content Management
 <img width="1280" height="623" alt="image" src="https://github.com/user-attachments/assets/9eea65fc-176b-487a-a02a-f7ba8578bca8" />
