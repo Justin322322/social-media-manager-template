@@ -4,11 +4,11 @@ A comprehensive collection of n8n workflows for automated business processes inc
 
 ## Available Workflows
 
-| Workflow Name | Description | File |
-|---------------|-------------|------|
-| Social Media Content Management | Automated content publishing and analytics reporting | `social-media-workflow.json` |
-| Lead Capture & Enrichment | Automated lead processing with Clearbit enrichment | `lead-capture-enrichment-workflow.json` |
-| Social Media Monitoring & Alerts | AI-powered sentiment analysis and alerts | `social-media-monitoring-alerts-workflow.json` |
+| Workflow Name | Description | File | Documentation |
+|---------------|-------------|------|---------------|
+| Social Media Content Management | Automated content publishing and analytics reporting | [`social-media-workflow.json`](#social-media-content-management) | [Overview](docs/workflow-overview.md#social-media-content-management-workflow) • [🔧 Structure](docs/workflow-structure.md#node-details) |
+| Lead Capture & Enrichment | Automated lead processing with Clearbit enrichment | [`lead-capture-enrichment-workflow.json`](#lead-capture--enrichment) | [Overview](docs/workflow-overview.md#lead-capture--enrichment-workflow) • [🔧 Structure](docs/workflow-structure.md#lead-capture--enrichment-workflow) |
+| Social Media Monitoring & Alerts | AI-powered sentiment analysis and alerts | [`social-media-monitoring-alerts-workflow.json`](#social-media-monitoring--alerts) | [Overview](docs/workflow-overview.md#social-media-monitoring--alerts-workflow) • [🔧 Structure](docs/workflow-structure.md#social-media-monitoring--alerts-workflow) |
 
 ## Social Media Content Management
 <img width="1280" height="623" alt="image" src="https://github.com/user-attachments/assets/9eea65fc-176b-487a-a02a-f7ba8578bca8" />
@@ -49,11 +49,17 @@ This workflow automates the entire social media content management process, from
 
 ## Quick Start
 
-1. **Import Workflow**: Import `social-media-workflow.json` into your n8n instance
-2. **Set Environment Variables**: Configure required environment variables
-3. **Set Up Credentials**: Configure Google Sheets and email credentials
-4. **Create Google Sheets**: Set up the required sheet structure
-5. **Activate Workflow**: Enable automatic execution
+### For All Workflows
+1. **Import Workflows**: Import any of the workflow JSON files into your n8n instance
+2. **Set Environment Variables**: Configure required environment variables for your chosen workflow(s)
+3. **Set Up Credentials**: Configure necessary API credentials (Google, Facebook, Slack, etc.)
+4. **Configure Services**: Set up required external services (Google Sheets, Facebook Page, etc.)
+5. **Activate Workflows**: Enable automatic execution for your chosen workflow(s)
+
+### Individual Workflow Setup
+- **[Social Media Content Management](docs/workflow-overview.md#social-media-content-management)**: Requires Facebook API and Google Sheets
+- **[Lead Capture & Enrichment](docs/workflow-overview.md#lead-capture--enrichment)**: Requires Clearbit API and Slack
+- **[Social Media Monitoring & Alerts](docs/workflow-overview.md#social-media-monitoring--alerts)**: Requires Twitter API, OpenAI, and Notion
 
 ## Documentation
 
@@ -63,9 +69,15 @@ This workflow automates the entire social media content management process, from
 - **[Google Sheets Template](docs/google-sheets-template.md)** - Sheet structure and setup
 
 ### 🔧 Technical Details
-- **[Workflow Overview](docs/workflow-overview.md)** - How the workflow operates
-- **[Workflow Structure](docs/workflow-structure.md)** - Detailed node breakdown
-- **[Customization](docs/customization.md)** - How to modify and extend the workflow
+- **[Complete Workflow Overview](docs/workflow-overview.md)** - Detailed overview of all workflows
+  - [Social Media Content Management](docs/workflow-overview.md#social-media-content-management)
+  - [Lead Capture & Enrichment](docs/workflow-overview.md#lead-capture--enrichment)
+  - [Social Media Monitoring & Alerts](docs/workflow-overview.md#social-media-monitoring--alerts)
+- **[Workflow Structure](docs/workflow-structure.md)** - Detailed node breakdown and configurations
+  - [Social Media Nodes](docs/workflow-structure.md#node-details)
+  - [Lead Capture Nodes](docs/workflow-structure.md#lead-capture--enrichment)
+  - [Monitoring Nodes](docs/workflow-structure.md#social-media-monitoring--alerts)
+- **[Customization](docs/customization.md)** - How to modify and extend the workflows
 
 ### Troubleshooting
 - **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions

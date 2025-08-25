@@ -19,7 +19,7 @@ The workspace contains three main automation workflows:
 **File**: `social-media-monitoring-alerts-workflow.json`
 - **Sentiment Analysis Flow** - Monitors social media mentions and alerts on negative sentiment
 
-## Social Media Content Management Workflow
+## Social Media Content Management
 
 ### Content Publishing Flow
 
@@ -321,7 +321,7 @@ The weekly report is automatically generated with:
 - Include performance trends
 - Customize report recipients
 
-## Lead Capture & Enrichment Workflow
+## Lead Capture & Enrichment
 
 ### Overview
 Automatically processes new leads from Google Forms, enriches company email addresses with Clearbit data, and notifies the team via Slack.
@@ -365,7 +365,7 @@ Automatically processes new leads from Google Forms, enriches company email addr
 - **Node Type**: Slack
 - **Position**: [1500, 300]
 
-## Social Media Monitoring & Alerts Workflow
+## Social Media Monitoring & Alerts
 
 ### Overview
 Monitors social media mentions, analyzes sentiment using OpenAI, and alerts the team about negative mentions via Slack and Notion.

@@ -450,7 +450,7 @@ TRIGGER - Weekly Analytics
 - Set up your [Google Sheets Template](google-sheets-template.md)
 - Learn about [Customization](customization.md) options
 
-## Lead Capture & Enrichment Workflow (`workflow-1.json`)
+## Lead Capture & Enrichment (`lead-capture-enrichment-workflow.json`)
 
 ### Node Details
 
@@ -567,7 +567,7 @@ TRIGGER - Weekly Analytics
   ```
 - **Purpose**: Sends formatted notification to team channel
 
-## Social Media Monitoring & Alerts Workflow (`workflow-2.json`)
+## Social Media Monitoring & Alerts (`social-media-monitoring-alerts-workflow.json`)
 
 ### Node Details
 
